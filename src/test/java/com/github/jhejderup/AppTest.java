@@ -1,4 +1,4 @@
-package io.github.jhejderup;
+package com.github.jhejderup;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
