@@ -110,18 +110,18 @@ public class WalaCallgraphConstructor {
             Optional<IMethod> inheritM = getOverriden(m);
 
             if (inheritM.isPresent()) {
-                return new MethodHierarchy(m, MethodHierarchy.Relation.OVERRIDES, inheritM.get());
+                return new MethodHierarchy(m, MethodHierarchy.Relation.OVERRIDES, inheritM);
             } else {
                 //Check implemented interfaces
                 Optional<IMethod> ifaceM = getImplemented(m);
                 if (ifaceM.isPresent()) {
-                    return new MethodHierarchy(m, MethodHierarchy.Relation.IMPLEMENTS, ifaceM.get());
+                    return new MethodHierarchy(m, MethodHierarchy.Relation.IMPLEMENTS, ifaceM);
+                } else {
+                    return new MethodHierarchy(m, MethodHierarchy.Relation.CONCRETE, Optional.empty());
+
                 }
             }
-            return null;
-
-        }).filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        }).collect(Collectors.toList());
         return info;
     }
 
