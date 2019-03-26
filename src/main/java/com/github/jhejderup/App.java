@@ -1,245 +1,252 @@
 package com.github.jhejderup;
 
 
-import com.github.gumtreediff.actions.ActionGenerator;
-import com.github.gumtreediff.actions.model.Action;
-import com.github.gumtreediff.actions.model.Move;
-import com.github.gumtreediff.gen.Generators;
-import com.github.gumtreediff.matchers.Matcher;
-import com.github.gumtreediff.matchers.Matchers;
-import com.github.gumtreediff.tree.ITree;
-import com.github.gumtreediff.tree.TreeContext;
-import com.github.jhejderup.diff.ChangeClassifier;
 import gumtree.spoon.AstComparator;
 import gumtree.spoon.diff.Diff;
 import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.lib.*;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectLoader;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
-import spoon.reflect.code.CtStatement;
-import spoon.reflect.declaration.CtElement;
-import spoon.reflect.declaration.CtMethod;
-import spoon.reflect.declaration.CtType;
+import spoon.reflect.declaration.*;
+import spoon.support.reflect.declaration.CtConstructorImpl;
 
-import java.awt.color.CMMException;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
 
 public class App {
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, GitAPIException {
 
-        String c1 = "" + "class X {" + "public void foo() {" + " int x = 0;" + "}" + "};";
+        /// Learned from this example, not only specify source-jar but also sources afterwards
+        /// Maven.resolver().resolve("G:A:test-jar:tests:V").withTransitivity().asFile();
 
-        String c2 = "" + "class X  {" + "public void foo()   {" + "" + "}" + "};";
+        File newJar = Maven.resolver()
+                .resolve("com.squareup.okhttp3:okhttp:java-source:sources:3.14.0")
+                .withoutTransitivity()
+                .asSingleFile();
 
-        AstComparator diff = new AstComparator();
-        CtType<?> left = diff.getCtType(c1);
-        CtType<?> right = diff.getCtType(c2);
+        File oldJar = Maven.resolver()
+                .resolve("com.squareup.okhttp3:okhttp:java-source:sources:3.13.1")
+                .withoutTransitivity()
+                .asSingleFile();
 
 
-        System.out.println(left.getMethods());
-        System.out.println(right.getMethods());
-        Diff editScript = diff.compare(left, right);
+        Path destPath = Paths.get("/Users/jhejderup/Desktop/uppdatera/okhttp");
 
-        editScript.getRootOperations()
-                .stream()
-                .forEach(op -> {
-                    CtElement src = op.getSrcNode();
-                    CtElement dst = op.getDstNode();
-                    if(src != null && dst != null) {
-                       System.out.println(src.getPath());
-                        System.out.println(dst.getPath());
-                        System.out.println(op.getAction().getClass().getSimpleName());
-                    }
+        if (!Files.notExists(destPath)) {
+            //always delete it
+            Files.walk(destPath)
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    //     .peek(System.out::println)
+                    .forEach(File::delete);
+        }
 
-                    if (src != null && dst == null) {
-                        System.out.println("No dst");
-                        System.out.println(src.getPath());
+        Files.createDirectories(destPath);
 
-                        System.out.println(src.getParent().getClass().getSimpleName());
+        ZipFile archieveOld = new ZipFile(oldJar);
 
+        archieveOld.stream().forEach(entry -> {
+            Path entryDest = destPath.resolve(entry.getName());
+            try {
+                if (entry.isDirectory()) {
+                    Files.createDirectory(entryDest);
+                } else {
+                    Files.copy(archieveOld.getInputStream(entry), entryDest);
+                }
+            } catch (Exception e) {
+                System.out.println("Errors");
+            }
+        });
+
+
+        Git git = Git.init()
+                .setDirectory(destPath.toFile())
+                .call();
+
+        git.add().addFilepattern(".").call();
+        RevCommit left = git.commit().setMessage("3.13.1").call();
+
+
+        ZipFile archieveNew = new ZipFile(newJar);
+        archieveNew.stream().forEach(entry -> {
+            Path entryDest = destPath.resolve(entry.getName());
+            try {
+                if (entry.isDirectory() && Files.notExists(entryDest)) {
+                    Files.createDirectory(entryDest);
+                } else if (!entry.isDirectory()) {
+                    Files.copy(archieveNew.getInputStream(entry), entryDest, StandardCopyOption.REPLACE_EXISTING);
+                }
+            } catch (Exception e) {
+                System.out.println(e);
+            }
+        });
+
+        git.add().addFilepattern(".").call();
+        RevCommit right = git.commit().setMessage("3.14.0").call();
+
+        //Start diff
+
+        ObjectReader reader = git.getRepository().newObjectReader();
+
+        CanonicalTreeParser leftTreeIter = new CanonicalTreeParser();
+        leftTreeIter.reset(reader, left.getTree());
+
+
+        CanonicalTreeParser rightTreeIter = new CanonicalTreeParser();
+        rightTreeIter.reset(reader, right.getTree());
+
+
+        List<DiffEntry> diffs = git.diff().setNewTree(leftTreeIter).setOldTree(rightTreeIter).call();
+
+        diffs.stream()
+                .filter(entry -> entry.getOldPath().endsWith(".java"))
+                .filter(entry -> !entry.getOldPath().contains("/src/test/"))
+                .forEach(k -> {
+                    try {
+
+                        System.out.println("Processing: " + k.getOldPath());
+
+                        //Painful bloat to fetch the file in the repo
+
+                        //old
+                        TreeWalk leftTree = new TreeWalk(git.getRepository());
+                        leftTree.addTree(left.getTree());
+                        leftTree.setRecursive(true);
+                        leftTree.setFilter(PathFilter.create(k.getOldPath()));
+
+
+                        //new
+                        TreeWalk rightTree = new TreeWalk(git.getRepository());
+                        rightTree.addTree(right.getTree());
+                        rightTree.setRecursive(true);
+                        rightTree.setFilter(PathFilter.create(k.getOldPath()));
+
+                        //Move next to retrieve the file
+
+                        if (rightTree.next() && leftTree.next()) {
+
+                            //Yet more bloat to read file content
+                            ObjectId objectIdOld = leftTree.getObjectId(0);
+                            ObjectLoader leftLoader = git.getRepository().open(objectIdOld);
+
+                            ObjectId objectIdNew = rightTree.getObjectId(0);
+                            ObjectLoader rightLoader = git.getRepository().open(objectIdNew);
+
+                            //Finally gumtree time!
+                            AstComparator diff = new AstComparator();
+
+                            CtType<?> astLeft = diff.getCtType(new String(leftLoader.getBytes(), "utf-8"));
+                            CtType<?> astRight = diff.getCtType(new String(rightLoader.getBytes(), "utf-8"));
+
+                            Diff editScript = diff.compare(astLeft,astRight);
+
+                            editScript
+                                    .getAllOperations()
+                                    .stream()
+                                    .forEach(op -> {
+                                           //changed (inserted/deleted/updated) element
+                                           //getDstNode will always be null
+                                        if(op.getDstNode() == null){
+                                            if (op.getSrcNode() != null) {
+                                                CtElement parent = op.getSrcNode();
+                                                while (parent.getParent() != null && !(parent.getParent() instanceof CtClass)) {
+                                                    parent = parent.getParent();
+                                                }
+                                                    //parent instanceof CtConstructor
+                                                if(parent instanceof CtMethod){
+
+                                                    System.out.println(((CtMethod) parent).getSignature());
+                                                    System.out.println(" change made ");
+                                                    System.out.println(op.getSrcNode().getPath());
+                                                    System.out.println(op);
+                                                    System.out.println("---");
+                                                } else {
+
+
+//                                                    System.out.println("---");
+//                                                    System.out.println(op.getClass().getSimpleName());
+//                                                    System.out.println(parent.getClass());
+//                                                    System.out.println("~~~~~");
+//                                                    System.out.println(op.getSrcNode().getClass());
+//                                                     System.out.println(parent);
+//                                                    System.out.println("---");
+
+                                                }
+
+
+                                            } else {
+
+                                                // some elements are only in the gumtree for having a clean diff
+                                                // but not in the Spoon metamodel
+                                            }
+
+                                        } else {
+                                            // the new version of the node (only for update)
+                                            CtElement dstParent = op.getDstNode();
+                                            while (dstParent.getParent() != null && !(dstParent.getParent() instanceof CtClass)) {
+                                                dstParent = dstParent.getParent();
+                                            }
+
+                                            CtElement srcParent = op.getSrcNode();
+                                            while (srcParent.getParent() != null && !(srcParent.getParent() instanceof CtClass)) {
+                                                srcParent = srcParent.getParent();
+                                            }
+
+                                            if(dstParent instanceof CtMethod && srcParent instanceof CtMethod) {
+                                                System.out.println(((CtMethod) srcParent).getSignature());
+                                                System.out.println(" update to in the next version");
+                                                System.out.println(((CtMethod) dstParent).getSignature());
+                                                System.out.println(" change was:");
+                                                System.out.println(op);
+
+                                            }
+
+                                        }
+                                    });
+
+
+                        }
+
+
+
+
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 });
-        System.out.println(editScript);
+
+
+
+
+
+
+
+
+
+
 
 
 
     }
-
-
-
-//    public static void main(String[] args) throws GitAPIException, IOException {
-//
-////        File jarNew = Maven.resolver()
-////                .resolve("com.squareup.okhttp3:okhttp:3.14.0")
-////                .withoutTransitivity()
-////                .asSingleFile();
-////
-////        File jarOld = Maven.resolver()
-////                .resolve("com.squareup.okhttp3:okhttp:3.13.1")
-////                .withoutTransitivity()
-////                .asSingleFile();
-//
-//
-////        Git git = Git.cloneRepository()
-////                .setURI("https://github.com/square/retrofit")
-////                .call();
-//
-//        FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder();
-//        Repository repository = repositoryBuilder.setGitDir(new File("/Users/jhejderup/Desktop/uppdatera/retrofit/.git"))
-//                .readEnvironment() // scan environment GIT_* variables
-//                .findGitDir() // scan up the file system tree
-//                .setMustExist(true)
-//                .build();
-//
-//        Git git = Git.wrap(repository);
-//
-//
-//
-//        List<Ref> refs = git.tagList().call();
-//        RevWalk walk = new RevWalk(git.getRepository());
-//
-//
-//        refs.stream().forEach(ref -> {
-//            try {
-//                RevCommit commit = walk.parseCommit(ref.getObjectId());
-//                walk.reset();
-//
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//
-//        });
-//
-//        //2.4.0 -> 7158698314daa138e993fac6a590ed19d78a8599
-//        //2.5.0 -> 40621bf538f6d48af182350adc880406c53dc67c
-//        //2.0.2 -> fd2f2e24a9e3aae3f7f6a832da3bb6fc22362577
-//
-//
-//        ObjectReader reader = git.getRepository().newObjectReader();
-//
-//        ObjectId oldid = repository.resolve("7158698314daa138e993fac6a590ed19d78a8599");
-//        RevCommit commitOld = walk.parseCommit(oldid);
-//        walk.reset();
-//
-//        CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
-//        oldTreeIter.reset(reader, commitOld.getTree());
-//
-//        ObjectId newid = repository.resolve("40621bf538f6d48af182350adc880406c53dc67c");
-//        RevCommit commitNew = walk.parseCommit(newid);
-//        walk.reset();
-//
-//        CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
-//        newTreeIter.reset(reader, commitNew.getTree());
-//
-//        List<DiffEntry> diffs = git.diff().setNewTree(newTreeIter).setOldTree(oldTreeIter).call();
-//
-//        diffs.stream()
-//                .filter(entry -> entry.getOldPath().endsWith(".java"))
-//                .filter(entry -> !entry.getOldPath().contains("/src/test/"))
-//                .forEach(k -> {
-//
-//                    try {
-//
-//                        System.out.println(k.getOldPath());
-//                        //old
-//                        TreeWalk oldTree = new TreeWalk(repository);
-//                        oldTree.addTree(commitOld.getTree());
-//                        oldTree.setRecursive(true);
-//                        oldTree.setFilter(PathFilter.create(k.getOldPath()));
-//
-//
-//
-//                        //new
-//                        TreeWalk newTree = new TreeWalk(repository);
-//                        newTree.addTree(commitNew.getTree());
-//                        newTree.setRecursive(true);
-//                        newTree.setFilter(PathFilter.create(k.getOldPath()));
-//
-//
-//
-//                        if (newTree.next() && oldTree.next()) {
-//
-//                            ObjectId objectIdOld = oldTree.getObjectId(0);
-//                            ObjectLoader loaderOld = repository.open(objectIdOld);
-//
-//                            ObjectId objectIdNew = newTree.getObjectId(0);
-//                            ObjectLoader loaderNew = repository.open(objectIdNew);
-//
-//
-//                            AstComparator diff = new AstComparator();
-//
-//
-//
-//                            CtType<?> astLeft = diff.getCtType(new String(loaderNew.getBytes(), "utf-8"));
-//                            CtType<?> astRight = diff.getCtType(new String(loaderOld.getBytes(), "utf-8"));
-//
-//
-//
-//                            System.out.println(diff.compare(astLeft,astRight));
-//
-//
-//                            if (astRight != null && astRight.getMethods().size() > 0){
-//                                Map<String,CtMethod> methodLookup = astRight
-//                                        .getMethods()
-//                                        .stream()
-//                                        .collect(Collectors.toMap(CtMethod::getSignature, CtMethod::clone));
-//
-//                                astLeft.getMethods().stream().forEach(methodLeft -> {
-//
-//                                if(methodLookup.containsKey(methodLeft.getSignature())) {
-//                                    CtMethod methodRight = methodLookup.get(methodLeft.getSignature());
-//                          //          System.out.println(methodLeft.getSignature());
-//                            //        System.out.println(methodRight.getSignature());
-//                                    Diff editScript = diff.compare(methodLeft, methodRight);
-//
-//                                     //   System.out.println(editScript.getRootOperations());
-//                                    try {
-//                                        editScript.getRootOperations().stream().forEach(System.out::println);
-//                                    } catch (Exception e) {
-//                                 //       System.out.println(e);
-//                                    }
-//
-//                                }
-//
-//
-//                            });
-//
-//                        }
-//                        }
-//
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-//
-//                });
-//    }
-
-//    public static void main(String[] args) throws ClassHierarchyException, CallGraphBuilderCancelException, IOException {
-//
-//        File[] artifacts = Maven.resolver().resolve("com.squareup.okhttp3:okcurl:3.14.0").withTransitivity().asFile();
-//        List<File> arts = Arrays.asList(artifacts);
-//        ArrayList<File> artlst = new ArrayList<>(arts);
-//        List<String> jars = artlst.stream().map(s -> s.getAbsolutePath()).collect(Collectors.toList());
-//
-//        String classpath = String.join(":", new ArrayList<>(jars));
-//
-//        WalaCallgraphConstructor.build(classpath);
-//
-//    }
 }
+
