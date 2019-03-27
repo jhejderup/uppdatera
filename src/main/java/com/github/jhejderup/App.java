@@ -1,8 +1,8 @@
 package com.github.jhejderup;
 
 
-import gumtree.spoon.AstComparator;
-import gumtree.spoon.diff.Diff;
+import com.github.jhejderup.diff.JavaSourceDiff;
+import gumtree.spoon.diff.operations.Operation;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
@@ -14,9 +14,6 @@ import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
-import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
-import spoon.reflect.declaration.*;
-import spoon.support.reflect.declaration.CtConstructorImpl;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,8 +22,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
-import java.util.zip.ZipEntry;
+import java.util.Map;
 import java.util.zip.ZipFile;
 
 
@@ -151,84 +149,17 @@ public class App {
                             ObjectId objectIdNew = rightTree.getObjectId(0);
                             ObjectLoader rightLoader = git.getRepository().open(objectIdNew);
 
-                            //Finally gumtree time!
-                            AstComparator diff = new AstComparator();
 
-                            CtType<?> astLeft = diff.getCtType(new String(leftLoader.getBytes(), "utf-8"));
-                            CtType<?> astRight = diff.getCtType(new String(rightLoader.getBytes(), "utf-8"));
+                            Map<String, List<Operation>> editMethods = JavaSourceDiff.editMethodScript(
+                                    new String(leftLoader.getBytes(), "utf-8"),
+                                    new String(rightLoader.getBytes(), "utf-8"));
 
-                            Diff editScript = diff.compare(astLeft,astRight);
-
-                            editScript
-                                    .getAllOperations()
-                                    .stream()
-                                    .forEach(op -> {
-                                           //changed (inserted/deleted/updated) element
-                                           //getDstNode will always be null
-                                        if(op.getDstNode() == null){
-                                            if (op.getSrcNode() != null) {
-                                                CtElement parent = op.getSrcNode();
-                                                while (parent.getParent() != null && !(parent.getParent() instanceof CtClass)) {
-                                                    parent = parent.getParent();
-                                                }
-                                                    //parent instanceof CtConstructor
-                                                if(parent instanceof CtMethod){
-
-                                                    System.out.println(((CtMethod) parent).getSignature());
-                                                    System.out.println(" change made ");
-                                                    System.out.println(op.getSrcNode().getPath());
-                                                    System.out.println(op);
-                                                    System.out.println("---");
-                                                } else {
-
-
-//                                                    System.out.println("---");
-//                                                    System.out.println(op.getClass().getSimpleName());
-//                                                    System.out.println(parent.getClass());
-//                                                    System.out.println("~~~~~");
-//                                                    System.out.println(op.getSrcNode().getClass());
-//                                                     System.out.println(parent);
-//                                                    System.out.println("---");
-
-                                                }
-
-
-                                            } else {
-
-                                                // some elements are only in the gumtree for having a clean diff
-                                                // but not in the Spoon metamodel
-                                            }
-
-                                        } else {
-                                            // the new version of the node (only for update)
-                                            CtElement dstParent = op.getDstNode();
-                                            while (dstParent.getParent() != null && !(dstParent.getParent() instanceof CtClass)) {
-                                                dstParent = dstParent.getParent();
-                                            }
-
-                                            CtElement srcParent = op.getSrcNode();
-                                            while (srcParent.getParent() != null && !(srcParent.getParent() instanceof CtClass)) {
-                                                srcParent = srcParent.getParent();
-                                            }
-
-                                            if(dstParent instanceof CtMethod && srcParent instanceof CtMethod) {
-                                                System.out.println(((CtMethod) srcParent).getSignature());
-                                                System.out.println(" update to in the next version");
-                                                System.out.println(((CtMethod) dstParent).getSignature());
-                                                System.out.println(" change was:");
-                                                System.out.println(op);
-
-                                            }
-
-                                        }
-                                    });
-
+                            editMethods.forEach((key,v) -> {
+                                System.out.println(key);
+                                v.stream().forEach(System.out::println);
+                            });
 
                         }
-
-
-
-
 
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -249,4 +180,3 @@ public class App {
 
     }
 }
-

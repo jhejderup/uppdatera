@@ -49,8 +49,6 @@ public class WalaCallgraphConstructor {
         //   i.e. java.lang.Object
         ClassHierarchy cha = ClassHierarchyFactory.makeWithRoot(scope);
 
-        //getAllMetehods(cha);
-
         //4. Specify Entrypoints -> all non-primordial public entrypoints (also with declared parameters, not sub-types)
         ArrayList<Entrypoint> entryPoints = getEntrypoints(cha);
 
