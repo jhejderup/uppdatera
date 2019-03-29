@@ -9,11 +9,13 @@ import com.ibm.wala.ipa.callgraph.*;
 import com.ibm.wala.ipa.callgraph.impl.DefaultEntrypoint;
 import com.ibm.wala.ipa.callgraph.impl.Util;
 import com.ibm.wala.ipa.cha.ClassHierarchy;
-import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
+import com.ibm.wala.util.WalaException;
 import com.ibm.wala.util.config.AnalysisScopeReader;
+import com.ibm.wala.util.graph.Graph;
+import com.ibm.wala.util.graph.GraphSlicer;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,8 +25,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.jar.JarFile;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -32,12 +33,11 @@ import java.util.stream.StreamSupport;
 
 public class WalaCallgraphConstructor {
 
-    private final static Pattern pattern = Pattern.compile("m2\\/repository\\/?(?<group>.*)\\/(?<artifact>[^\\/]*)\\/(?<version>[^\\/]*)\\/([^\\/]*).jar");
     //A filter that accepts WALA objects that "belong" to the application loader.
     private static Predicate<CGNode> applicationLoaderFilter =
             node -> isApplication(node.getMethod().getDeclaringClass());
 
-    public static void build(String classpath) throws IOException, ClassHierarchyException, CallGraphBuilderCancelException {
+    public static void build(String classpath) throws IOException, WalaException, CallGraphBuilderCancelException {
         //1. Fetch exclusion file
         ClassLoader classLoader = WalaCallgraphConstructor.class.getClassLoader();
         File exclusionFile = new File(classLoader.getResource("Java60RegressionExclusions.txt").getFile());
@@ -52,8 +52,11 @@ public class WalaCallgraphConstructor {
         //4. Specify Entrypoints -> all non-primordial public entrypoints (also with declared parameters, not sub-types)
         ArrayList<Entrypoint> entryPoints = getEntrypoints(cha);
 
+
         //5. Encapsulates various analysis options
         AnalysisOptions options = new AnalysisOptions(scope, entryPoints);
+
+
         AnalysisCache cache = new AnalysisCacheImpl();
 
 
@@ -67,6 +70,15 @@ public class WalaCallgraphConstructor {
         ArrayList<ResolvedCall> calls = new ArrayList<>(getResolvedCalls(cg));
 
 
+    }
+
+    private static Graph<CGNode> pruneGraph(CallGraph callgraph) {
+        Graph<CGNode> finalGraph = GraphSlicer.prune(callgraph, (CGNode t) -> {
+            IMethod method = t.getMethod();
+            t.iterateCallSites();
+            return isApplication(method.getDeclaringClass());
+        });
+        return finalGraph;
     }
 
     //Resolve reference to actual method
@@ -159,7 +171,7 @@ public class WalaCallgraphConstructor {
     }
 
     ///
-    /// Creating list of Entrypoints (stuff taken from  woutrrr/lapp)
+    /// Creating list diff Entrypoints (stuff taken from  woutrrr/lapp)
     ///
     private static ArrayList<Entrypoint> getEntrypoints(ClassHierarchy cha) {
         Iterable<IClass> iterable = () -> cha.iterator();
@@ -198,15 +210,7 @@ public class WalaCallgraphConstructor {
     ///
     /// Fetching MavenCoordinate
     ///
-    private static MavenCoordinate getMavenCoordinate(String path) {
-        Matcher matcher = pattern.matcher(path);
-        matcher.find();
-        return new MavenCoordinate(
-                matcher.group("group").replace('/', '.'),
-                matcher.group("artifact"),
-                matcher.group("version")
-        );
-    }
+
 
     private static String fetchJarFile(IClass klass) throws IOException {
         ShrikeClass shrikeKlass = (ShrikeClass) klass;
