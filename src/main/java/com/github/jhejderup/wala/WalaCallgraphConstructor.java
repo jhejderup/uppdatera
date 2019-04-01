@@ -210,8 +210,6 @@ public class WalaCallgraphConstructor {
     ///
     /// Fetching MavenCoordinate
     ///
-
-
     private static String fetchJarFile(IClass klass) throws IOException {
         ShrikeClass shrikeKlass = (ShrikeClass) klass;
         JarFileEntry moduleEntry = (JarFileEntry) shrikeKlass.getModuleEntry();

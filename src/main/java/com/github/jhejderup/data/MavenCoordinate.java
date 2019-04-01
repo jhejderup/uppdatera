@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MavenCoordinate implements Serializable {
+public final class MavenCoordinate implements Serializable {
 
     private final static Pattern pattern = Pattern.compile("m2\\/repository\\/?(?<group>.*)\\/(?<artifact>[^\\/]*)\\/(?<version>[^\\/]*)\\/([^\\/]*).jar");
 
@@ -19,9 +19,8 @@ public class MavenCoordinate implements Serializable {
     }
 
 
-
-    public static MavenCoordinate getMavenCoordinateFromJAR(String path) {
-        Matcher matcher = pattern.matcher(path);
+    public static MavenCoordinate of(String jarPath) {
+        Matcher matcher = pattern.matcher(jarPath);
         matcher.find();
         return new MavenCoordinate(
                 matcher.group("group").replace('/', '.'),
