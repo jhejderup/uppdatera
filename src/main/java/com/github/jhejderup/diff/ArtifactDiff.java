@@ -78,6 +78,7 @@ public class ArtifactDiff {
         return unzipLocation;
     }
 
+
     private static void unzipFiles(final ZipInputStream zipInputStream, final Path unzipFilePath)
             throws IOException {
 
@@ -91,6 +92,8 @@ public class ArtifactDiff {
         }
 
     }
+
+
     ///
     /// File level diffing using git diff
     ///

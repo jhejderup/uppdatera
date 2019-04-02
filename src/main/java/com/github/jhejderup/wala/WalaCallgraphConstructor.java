@@ -1,6 +1,5 @@
 package com.github.jhejderup.wala;
 
-
 import com.github.jhejderup.data.MavenCoordinate;
 import com.github.jhejderup.data.MethodHierarchy;
 import com.github.jhejderup.data.ResolvedCall;
@@ -14,8 +13,6 @@ import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.util.WalaException;
 import com.ibm.wala.util.config.AnalysisScopeReader;
-import com.ibm.wala.util.graph.Graph;
-import com.ibm.wala.util.graph.GraphSlicer;
 
 import java.io.File;
 import java.io.IOException;
@@ -70,15 +67,6 @@ public class WalaCallgraphConstructor {
         ArrayList<ResolvedCall> calls = new ArrayList<>(getResolvedCalls(cg));
 
 
-    }
-
-    private static Graph<CGNode> pruneGraph(CallGraph callgraph) {
-        Graph<CGNode> finalGraph = GraphSlicer.prune(callgraph, (CGNode t) -> {
-            IMethod method = t.getMethod();
-            t.iterateCallSites();
-            return isApplication(method.getDeclaringClass());
-        });
-        return finalGraph;
     }
 
     //Resolve reference to actual method
@@ -174,11 +162,11 @@ public class WalaCallgraphConstructor {
     /// Creating list diff Entrypoints (stuff taken from  woutrrr/lapp)
     ///
     private static ArrayList<Entrypoint> getEntrypoints(ClassHierarchy cha) {
-        Iterable<IClass> iterable = () -> cha.iterator();
-        List<Entrypoint> entryPoints = StreamSupport.stream(iterable.spliterator(), false)
-                .filter(WalaCallgraphConstructor::acceptClassForEntryPoints)
+        Iterable<IClass> classes = () -> cha.iterator();
+        List<Entrypoint> entryPoints = StreamSupport.stream(classes.spliterator(), false)
+                .filter(WalaCallgraphConstructor::isPublicClass)
                 .flatMap(klass -> klass.getAllMethods().parallelStream())
-                .filter(WalaCallgraphConstructor::acceptMethodAsEntryPoint)
+                .filter(WalaCallgraphConstructor::isPublicMethod)
                 .map(m -> new DefaultEntrypoint(m, cha))
                 .collect(Collectors.toList());
         return new ArrayList<>(entryPoints);
@@ -187,13 +175,13 @@ public class WalaCallgraphConstructor {
     ///
     /// Helper functions
     ///
-    private static boolean acceptClassForEntryPoints(IClass klass) {
+    private static boolean isPublicClass(IClass klass) {
         return isApplication(klass)
                 && !klass.isInterface()
                 && klass.isPublic();
     }
 
-    private static boolean acceptMethodAsEntryPoint(IMethod method) {
+    private static boolean isPublicMethod(IMethod method) {
         return isApplication(method.getDeclaringClass())
                 && method.isPublic()
                 && !method.isAbstract();
@@ -210,6 +198,7 @@ public class WalaCallgraphConstructor {
     ///
     /// Fetching MavenCoordinate
     ///
+
     private static String fetchJarFile(IClass klass) throws IOException {
         ShrikeClass shrikeKlass = (ShrikeClass) klass;
         JarFileEntry moduleEntry = (JarFileEntry) shrikeKlass.getModuleEntry();
@@ -217,6 +206,18 @@ public class WalaCallgraphConstructor {
         String jarPath = jarFile.getName();
         jarFile.close();
         return jarPath;
+    }
+
+    private static Optional<MavenCoordinate> getMavenCoordinate(IClass klass) {
+
+        try {
+            String jarFile = fetchJarFile(klass);
+            return Optional.of(MavenCoordinate.of(jarFile));
+        } catch (IOException e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
+
     }
 
 
