@@ -1,9 +1,13 @@
 package com.github.jhejderup.diff;
 
-import com.github.jhejderup.data.FileDiff;
+import com.github.gumtreediff.matchers.MappingStore;
+import com.github.gumtreediff.tree.ITree;
 import com.github.jhejderup.data.MavenCoordinate;
-import com.github.jhejderup.data.JavaSourceDiff;
-import gumtree.spoon.AstComparator;
+import com.github.jhejderup.data.diff.FileDiff;
+import com.github.jhejderup.data.diff.JavaSourceDiff;
+import gumtree.spoon.builder.SpoonGumTreeBuilder;
+import gumtree.spoon.diff.Diff;
+import gumtree.spoon.diff.operations.InsertOperation;
 import gumtree.spoon.diff.operations.Operation;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.zeroturnaround.exec.ProcessExecutor;
@@ -23,10 +27,20 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+
 public class ArtifactDiff {
 
     public static Stream<JavaSourceDiff> diff(MavenCoordinate coordLeft, MavenCoordinate coordRight)
             throws IOException, TimeoutException, InterruptedException {
+
+        //Add full classpath for proper type resolution
+        String[] sourceClasspath = ArtifactResolver
+                .resolveDependencyTree(coordLeft)
+                .map(artifact -> artifact.asFile())
+                .map(file -> file.toString())
+                .distinct()
+                .toArray(String[]::new);
+
         Path leftFolder = fetchAndExtractJARSource(coordLeft);
         Path rightFolder = fetchAndExtractJARSource(coordRight);
 
@@ -34,8 +48,9 @@ public class ArtifactDiff {
                 .filter(ArtifactDiff::isImpactKind)
                 .filter(ArtifactDiff::isJavaFile)
                 .filter(ArtifactDiff::isNotTestFile)
-                .map(ArtifactDiff::diffJavaMethods);
+                .map(d -> diffJavaMethods(d, sourceClasspath));
     }
+
     ///
     /// Download and unzip
     ///
@@ -118,7 +133,7 @@ public class ArtifactDiff {
 
     private static boolean isNotTestFile(FileDiff diff) {
         Optional<Path> src = diff.srcFile;
-       return src.map(path -> !path.toString().endsWith("/src/test/")).orElse(true);
+        return src.map(path -> !path.toString().endsWith("/src/test/")).orElse(true);
     }
 
     private static Stream<FileDiff> diffFiles(Path leftFolder, Path rightFolder)
@@ -160,6 +175,7 @@ public class ArtifactDiff {
                 })
                 .filter(Objects::nonNull); //we currently skip unknown (null diffs)
     }
+
     ///
     /// AST level diffing using GumTree/Spoon
     ///
@@ -175,15 +191,22 @@ public class ArtifactDiff {
         return element instanceof CtConstructor;
     }
 
-    private static boolean isMethodChange(Operation op) {
-        return getTopLevelMethod(op).isPresent();
+    private static boolean isMethodChange(Operation op, MappingStore store) {
+        return getTopLevelMethod(op, store).isPresent();
     }
 
+    private static Optional<CtElement> getTopLevelMethod(Operation op, MappingStore store) {
 
-    private static Optional<CtElement> getTopLevelMethod(Operation op) {
         CtElement parent = op.getSrcNode();
         Stack<CtElement> stack = new Stack<>();
         try {
+            if (op instanceof InsertOperation) {
+                ITree dst = (ITree) op.getSrcNode().getMetadata("gtnode");
+                ITree dstParent = store.firstMappedDstParent(dst);
+                ITree src = store.getSrc(dstParent);
+                parent = (CtElement) src.getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+
+            }
             //1. keep traversing parents in the tree
             //   until we see the sky
             //   and push elements to the stack
@@ -209,35 +232,43 @@ public class ArtifactDiff {
         }
     }
 
-    private static Stream<Operation> diffJavaSourceFiles(FileDiff fileDiff)
+    private static AbstractMap.SimpleEntry<MappingStore, Stream<Operation>> diffJavaSourceFiles(FileDiff fileDiff, String[] srcClassPath)
             throws Exception {
         assert (fileDiff.type != FileDiff.Change.ADDITION);
         assert (fileDiff.type != FileDiff.Change.COPY);
 
-        AstComparator diff = new AstComparator();
+        AstComperator diff = new AstComperator(srcClassPath);
         Optional<Path> srcFile = fileDiff.srcFile;
         Optional<Path> dstFile = fileDiff.dstFile;
 
+        Diff edit = isFileRemoval(fileDiff) ?
+                diff.compare(diff.getCtType(srcFile.get().toFile()), null) :
+                diff.compare(srcFile.get().toFile(), dstFile.get().toFile());
+
+
         //file removal -> allOperations due to comp. with null
         List<Operation> editScript = isFileRemoval(fileDiff) ?
-                diff.compare(diff.getCtType(srcFile.get().toFile()), null).getAllOperations() :
-                diff.compare(srcFile.get().toFile(), dstFile.get().toFile()).getRootOperations();
+                edit.getAllOperations() :
+                edit.getRootOperations();
 
-        return editScript
-                .stream();
+        return new AbstractMap.SimpleEntry<>(edit.getMappingsComp(), editScript
+                .stream());
     }
 
-    private static Map<CtExecutable, List<Operation>> diffJavaSourceMethods(FileDiff fileDiff)
+    private static Map<CtExecutable, List<Operation>> diffJavaSourceMethods(FileDiff fileDiff, String[] srcClassPath)
             throws Exception {
 
-        return diffJavaSourceFiles(fileDiff)
-                .filter(ArtifactDiff::isMethodChange) //only changes in a method/constructor
-                .collect(Collectors.groupingBy(op -> ((CtExecutable) getTopLevelMethod(op).get())));
+        AbstractMap.SimpleEntry<MappingStore, Stream<Operation>> diff = diffJavaSourceFiles(fileDiff, srcClassPath);
+        MappingStore mappings = diff.getKey();
+
+        return diff.getValue()
+                .filter(op -> isMethodChange(op, mappings)) //only changes in a method/constructor
+                .collect(Collectors.groupingBy(op -> ((CtExecutable) getTopLevelMethod(op, mappings).get())));
     }
 
-    private static JavaSourceDiff diffJavaMethods(FileDiff fileDiff) {
+    private static JavaSourceDiff diffJavaMethods(FileDiff fileDiff, String[] srcClassPath) {
         try {
-            Map<CtExecutable, List<Operation>> methodDiffs = diffJavaSourceMethods(fileDiff);
+            Map<CtExecutable, List<Operation>> methodDiffs = diffJavaSourceMethods(fileDiff, srcClassPath);
             return new JavaSourceDiff(fileDiff, Optional.of(methodDiffs));
         } catch (Exception e) {
             e.printStackTrace();

@@ -1,4 +1,4 @@
-package com.github.jhejderup.data;
+package com.github.jhejderup.data.diff;
 
 import gumtree.spoon.diff.operations.Operation;
 import spoon.reflect.declaration.CtExecutable;

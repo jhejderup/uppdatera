@@ -1,4 +1,4 @@
-package com.github.jhejderup.data;
+package com.github.jhejderup.data.diff;
 
 import java.io.Serializable;
 import java.nio.file.Path;
