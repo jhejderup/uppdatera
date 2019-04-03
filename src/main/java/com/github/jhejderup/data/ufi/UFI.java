@@ -4,6 +4,7 @@ import com.github.jhejderup.data.ufi.UniversalType;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -43,4 +44,23 @@ public final class UFI implements Serializable {
     }
 
 
+    @Override
+    public boolean equals(Object o) {
+        // self check
+        if (this == o)
+            return true;
+        // null check
+        if (o == null)
+            return false;
+        // type check and cast
+        if (getClass() != o.getClass())
+            return false;
+        UFI ufi = (UFI)o;
+        return Objects.equals(this.toString(),ufi.toString());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.toString());
+    }
 }

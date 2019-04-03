@@ -6,6 +6,7 @@ import com.github.jhejderup.data.Namespace;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -40,7 +41,26 @@ public final class UniversalType implements Serializable {
             return Stream.concat(Stream.of("__unknown"),Arrays.stream(inner.segments)).toArray(String[]::new);
         }
 
+    }
 
+    @Override
+    public boolean equals(Object o) {
+        // self check
+        if (this == o)
+            return true;
+        // null check
+        if (o == null)
+            return false;
+        // type check and cast
+        if (getClass() != o.getClass())
+            return false;
+        UniversalType ty = (UniversalType) o;
+        return Objects.equals(this.outer,ty.outer) &&
+                Objects.equals(this.inner, ty.inner);
+    }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.outer,this.inner);
     }
 }

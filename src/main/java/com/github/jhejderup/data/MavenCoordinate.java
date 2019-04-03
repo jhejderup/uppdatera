@@ -1,6 +1,7 @@
 package com.github.jhejderup.data;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -11,6 +12,8 @@ public final class MavenCoordinate extends Namespace implements Serializable {
     public final String artifactId;
     public final String groupId;
     public final String version;
+
+
 
     public MavenCoordinate(String groupId, String artifactId, String version) {
         super(new String[]{groupId.replace(".","::"),artifactId,version}); //TODO: we cheating here
@@ -46,5 +49,26 @@ public final class MavenCoordinate extends Namespace implements Serializable {
         );
     }
 
+    @Override
+    public boolean equals(Object o) {
+        // self check
+        if (this == o)
+            return true;
+        // null check
+        if (o == null)
+            return false;
+        // type check and cast
+        if (getClass() != o.getClass())
+            return false;
+        MavenCoordinate coord = (MavenCoordinate) o;
+        return super.equals(o) &&
+                Objects.equals(this.groupId, coord.groupId) &&
+                Objects.equals(this.artifactId, coord.artifactId) &&
+                Objects.equals(this.version, coord.version);
+    }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.segments,this.groupId,this.artifactId,this.version);
+    }
 }

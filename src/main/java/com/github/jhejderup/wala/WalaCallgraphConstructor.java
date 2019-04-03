@@ -15,10 +15,13 @@ import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.WalaException;
 import com.ibm.wala.util.config.AnalysisScopeReader;
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
@@ -34,7 +37,7 @@ public class WalaCallgraphConstructor {
     private static Predicate<CGNode> applicationLoaderFilter =
             node -> isApplication(node.getMethod().getDeclaringClass());
 
-    public static void build(String classpath) throws IOException, WalaException, CallGraphBuilderCancelException {
+    public static List<ResolvedCall> build(String classpath) throws IOException, WalaException, CallGraphBuilderCancelException {
         //1. Fetch exclusion file
         ClassLoader classLoader = WalaCallgraphConstructor.class.getClassLoader();
         File exclusionFile = new File(classLoader.getResource("Java60RegressionExclusions.txt").getFile());
@@ -62,20 +65,18 @@ public class WalaCallgraphConstructor {
         CallGraphBuilder builder = Util.makeRTABuilder(options, cache, cha, scope);
         CallGraph cg = builder.makeCallGraph(options, null);
 
-        ArrayList<MethodHierarchy> methods = new ArrayList<>(getAllMethods(cha));
-        ArrayList<ResolvedCall> calls = new ArrayList<>(getResolvedCalls(cg));
+        return resolveCalls(cg);
 
+       // ArrayList<MethodHierarchy> methods = new ArrayList<>(getAllMethods(cha));
+       // ArrayList<ResolvedCall> calls = new ArrayList<>(resolveCalls(cg));
 
-        calls.stream()
-                .flatMap(call -> Stream.of(convertToUFI(call.source), convertToUFI(call.target)))
-                .forEach(System.out::println);
     }
 
     //Resolve reference to actual method
     //TODO: Understand why some are not resolved (like abstract class, interfaces)
     //Finding the class is not an issue, but comes when we look up the method
     //best to be careful here: we should only call implementations!
-    private static List<ResolvedCall> getResolvedCalls(CallGraph cg) {
+    private static List<ResolvedCall> resolveCalls(CallGraph cg) {
         Iterable<CGNode> cgNodes = () -> cg.iterator();
         List<ResolvedCall> calls = StreamSupport
                 .stream(cgNodes.spliterator(), false)
@@ -189,10 +190,6 @@ public class WalaCallgraphConstructor {
                 && !method.isAbstract();
     }
 
-    private static Boolean isJavaStandardLibrary(IClass klass) {
-        return klass.getClassLoader().getReference().equals(ClassLoaderReference.Primordial);
-    }
-
     private static Boolean isApplication(IClass klass) {
         return klass.getClassLoader().getReference().equals(ClassLoaderReference.Application);
     }
@@ -235,39 +232,39 @@ public class WalaCallgraphConstructor {
         switch (s.charAt(0)) {
             case TypeReference.BooleanTypeCode:
                 return new UniversalType(
-                        Optional.of(new Namespace("PrimitiveType")),
+                        Optional.of(new Namespace("JavaPrimitive")),
                         new Namespace("boolean"));
             case TypeReference.ByteTypeCode:
                 return new UniversalType(
-                        Optional.of(new Namespace("PrimitiveType")),
+                        Optional.of(new Namespace("JavaPrimitive")),
                         new Namespace("byte"));
             case TypeReference.CharTypeCode:
                 return new UniversalType(
-                        Optional.of(new Namespace("PrimitiveType")),
+                        Optional.of(new Namespace("JavaPrimitive")),
                         new Namespace("char"));
             case TypeReference.DoubleTypeCode:
                 return new UniversalType(
-                        Optional.of(new Namespace("PrimitiveType")),
+                        Optional.of(new Namespace("JavaPrimitive")),
                         new Namespace("double"));
             case TypeReference.FloatTypeCode:
                 return new UniversalType(
-                        Optional.of(new Namespace("PrimitiveType")),
+                        Optional.of(new Namespace("JavaPrimitive")),
                         new Namespace("float"));
             case TypeReference.IntTypeCode:
                 return new UniversalType(
-                        Optional.of(new Namespace("PrimitiveType")),
+                        Optional.of(new Namespace("JavaPrimitive")),
                         new Namespace("int"));
             case TypeReference.LongTypeCode:
                 return new UniversalType(
-                        Optional.of(new Namespace("PrimitiveType")),
+                        Optional.of(new Namespace("JavaPrimitive")),
                         new Namespace("long"));
             case TypeReference.ShortTypeCode:
                 return new UniversalType(Optional.of(
-                        new Namespace("PrimitiveType")),
+                        new Namespace("JavaPrimitive")),
                         new Namespace("short"));
             case TypeReference.VoidTypeCode:
                 return new UniversalType(Optional.of(
-                        new Namespace("PrimitiveType")),
+                        new Namespace("JavaPrimitive")),
                         new Namespace("void"));
             case TypeReference.ClassTypeCode:
                 IClass klass = cha.lookupClass(tyref);
@@ -294,16 +291,22 @@ public class WalaCallgraphConstructor {
         Namespace inner = new Namespace((item.getDeclaringClass().getName().toString()).substring(1).split("/"));
         UniversalType path = new UniversalType(outer, inner);
         String methodName = item.getName().toString();
-        UniversalType returnType = resolveTypeRef(item.getClassHierarchy(), item.getReturnType());
+
+
+        UniversalType returnType = item.isInit() ? resolveTypeRef(item.getClassHierarchy(), item.getParameterType(0))
+                : resolveTypeRef(item.getClassHierarchy(), item.getReturnType());
         Optional<List<UniversalType>> args = item.getNumberOfParameters() > 0 ?
-                Optional.of(IntStream.range(0, item.getNumberOfParameters() - 1)
+                Optional.of(IntStream.range(1, item.getNumberOfParameters())
                         .mapToObj(i -> resolveTypeRef(item.getClassHierarchy(), item.getParameterType(i)))
                         .collect(Collectors.toList())) : Optional.empty();
         return new UFI(path, methodName, args, returnType);
     }
 
-
-    public Map<UFI, IMethod> mapping() {
-        return null;
+    public static Map<UFI, IMethod> mapping(List<ResolvedCall> calls ) {
+        return calls.stream()
+                .flatMap(call -> Stream.of(call.source, call.target))
+              //  .filter(c -> c.getSignature().contains("connectionCount"))
+                .collect(Collectors.toMap(WalaCallgraphConstructor::convertToUFI, Function.identity(), (v1, v2) -> v1));
     }
+
 }
