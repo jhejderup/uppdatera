@@ -15,12 +15,10 @@ import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.util.WalaException;
 import com.ibm.wala.util.config.AnalysisScopeReader;
-import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.jar.JarFile;
@@ -305,7 +303,6 @@ public class WalaCallgraphConstructor {
     public static Map<UFI, IMethod> mapping(List<ResolvedCall> calls ) {
         return calls.stream()
                 .flatMap(call -> Stream.of(call.source, call.target))
-              //  .filter(c -> c.getSignature().contains("connectionCount"))
                 .collect(Collectors.toMap(WalaCallgraphConstructor::convertToUFI, Function.identity(), (v1, v2) -> v1));
     }
 

@@ -1,10 +1,8 @@
 package com.github.jhejderup;
 
 
-import com.github.jhejderup.data.JDKClassPath;
-import com.github.jhejderup.data.MavenCoordinate;
-import com.github.jhejderup.data.Namespace;
-import com.github.jhejderup.data.ResolvedCall;
+import com.github.jhejderup.connectors.EmbeddedGradle;
+import com.github.jhejderup.data.*;
 import com.github.jhejderup.data.diff.FileDiff;
 import com.github.jhejderup.data.ufi.UFI;
 import com.github.jhejderup.data.ufi.UniversalType;
@@ -14,17 +12,16 @@ import com.github.jhejderup.wala.WalaCallgraphConstructor;
 import com.ibm.wala.classLoader.IMethod;
 import gumtree.spoon.diff.operations.Operation;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
-import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 import spoon.reflect.declaration.*;
 import spoon.reflect.reference.CtTypeReference;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Uppdatera {
 
@@ -44,7 +41,7 @@ public class Uppdatera {
     }
 
 
-    private static UniversalType resolveType(CtTypeReference type, Map<String,MavenCoordinate> lookup) {
+    private static UniversalType resolveSpoonType(CtTypeReference type, Map<String,MavenCoordinate> lookup) {
         if(type.isPrimitive()) {
             return new UniversalType(
                     Optional.of(new Namespace("JavaPrimitive")),
@@ -75,15 +72,15 @@ public class Uppdatera {
         List<UniversalType> args =
                 Arrays.stream(method.getParameters().toArray())
                 .map(CtParameter.class::cast)
-                .map(arg -> resolveType(arg.getType(),lookup))
+                .map(arg -> resolveSpoonType(arg.getType(),lookup))
                 .collect(Collectors.toList());
 
 
         return new UFI(
-                resolveType(((CtType) method.getParent()).getReference(),lookup),
+                resolveSpoonType(((CtType) method.getParent()).getReference(),lookup),
                 method.getSimpleName(),
                 args.size() > 0 ? Optional.of(args): Optional.empty(),
-                resolveType(method.getType(),lookup)
+                resolveSpoonType(method.getType(),lookup)
         );
     }
 
@@ -91,18 +88,20 @@ public class Uppdatera {
 
     public static void main(String[] args)
             throws Exception {
-        MavenCoordinate coordLeft = new MavenCoordinate("com.squareup.okhttp3", "okhttp", "3.13.1");
-        MavenCoordinate coordRight = new MavenCoordinate("com.squareup.okhttp3", "okhttp", "3.14.0");
+
+        String[] leftArtifact = args[1].split(":");
+        String[] rightArtifact = args[2].split(":");
+
+        MavenCoordinate coordLeft = new MavenCoordinate(leftArtifact[0], leftArtifact[1], leftArtifact[2]);
+        MavenCoordinate coordRight = new MavenCoordinate(rightArtifact[0], rightArtifact[1], rightArtifact[2]);
         Map<String,MavenCoordinate> lookup = buildClassLookupTable(coordLeft);
 
-
-
-        File[] artifacts = Maven.resolver().resolve("com.squareup.okhttp3:okhttp:3.13.1").withTransitivity().asFile();
-        List<File> arts = Arrays.asList(artifacts);
-        ArrayList<File> artlst = new ArrayList<>(arts);
-        List<String> jars = artlst.stream().map(s -> s.getAbsolutePath()).collect(Collectors.toList());
-
-        String classpath = String.join(":", new ArrayList<>(jars));
+        List<UppdateraCoordinate> clientClassPath = EmbeddedGradle.getClasspath(Paths.get(args[0]));
+        String classpath = clientClassPath
+                .stream()
+                .map(d -> d.jarFile)
+                .map(Objects::toString)
+                .collect(Collectors.joining(","));
 
         List<ResolvedCall> cg = WalaCallgraphConstructor.build(classpath);
         Map<UFI, IMethod> cg_table = WalaCallgraphConstructor.mapping(cg);
