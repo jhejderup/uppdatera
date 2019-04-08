@@ -47,7 +47,7 @@ public class GenerateMavenCG2 {
                             .link(to(node(WalaCallgraphConstructor.convertToUFI(call.target).toString())))
             ).toArray(LinkSource[]::new));
             Graphviz.useEngine(engine);
-            Graphviz.fromGraph(g).render(Format.JSON);
+            Graphviz.fromGraph(g).render(Format.PLAIN);
         } catch (Exception e) {
             e.printStackTrace();
         }
