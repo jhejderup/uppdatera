@@ -41,7 +41,7 @@ public class GenerateMavenCG2 {
         engine.setDotOutputFile(args[0],args[1]);
 
         try {
-           List<ResolvedCall> cg =  WalaCallgraphConstructor.build( buildClasspath(args[0]));
+           List<ResolvedCall> cg =  WalaCallgraphConstructor.build( buildClasspath(args[1]));
             Graph g = graph().directed().with(cg.stream().map(
                     call -> node(WalaCallgraphConstructor.convertToUFI(call.source).toString())
                             .link(to(node(WalaCallgraphConstructor.convertToUFI(call.target).toString())))
