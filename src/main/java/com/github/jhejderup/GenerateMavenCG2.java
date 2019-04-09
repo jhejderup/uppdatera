@@ -43,7 +43,7 @@ public class GenerateMavenCG2 {
 
     public static void main(String[] args) {
 
-        logger.info("Constructing callgraph of package {}", args[0]);
+        logger.info("Constructing callgraph of package {}", args[1]);
 
         final GraphvizCmdLineEngine engine = new GraphvizCmdLineEngine();
 
@@ -63,7 +63,7 @@ public class GenerateMavenCG2 {
             Graphviz.useEngine(engine);
             Graphviz.fromGraph(g).render(Format.PLAIN).toString();
         } catch (Exception e) {
-            logger.error("An exception occurred!", e);
+            logger.error("An exception occurred for {}",args[1], e);
         }
     }
 }
