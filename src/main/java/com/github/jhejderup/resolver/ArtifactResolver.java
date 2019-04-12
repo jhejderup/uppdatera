@@ -1,7 +1,8 @@
-package com.github.jhejderup.diff;
+package com.github.jhejderup.resolver;
 
 
-import com.github.jhejderup.data.MavenCoordinate;
+import com.github.jhejderup.data.type.MavenCoordinate;
+import com.github.jhejderup.data.type.MavenResolvedCoordinate;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jboss.shrinkwrap.resolver.api.maven.MavenArtifactInfo;
 import org.jboss.shrinkwrap.resolver.api.maven.MavenResolvedArtifact;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import java.util.Map;
+import java.util.function.Function;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,17 +47,14 @@ public class ArtifactResolver {
 
     }
 
-    public static Stream<Map<String, MavenCoordinate>> getClasses(MavenResolvedArtifact artifact){
+    public static Stream<Map<String, MavenResolvedCoordinate>> getClasses(MavenResolvedArtifact artifact){
         try {
             JarFile jar = new JarFile(artifact.asFile());
             return Stream.of(jar.stream()
                     .filter(entry ->  entry.getName().endsWith(".class"))
                     .map(entry -> entry.getName().replaceAll("/", "\\."))
                     .map(ArtifactResolver::removeExtension)
-                    .collect(Collectors.toMap(k -> k, k -> new MavenCoordinate(
-                            artifact.getCoordinate().getGroupId(),
-                            artifact.getCoordinate().getArtifactId(),
-                            artifact.getResolvedVersion()))));
+                    .collect(Collectors.toMap(Function.identity(), k -> MavenResolvedCoordinate.of(artifact))));
 
         } catch (IOException e) {
             e.printStackTrace();

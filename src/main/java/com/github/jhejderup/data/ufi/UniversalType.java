@@ -1,8 +1,8 @@
 package com.github.jhejderup.data.ufi;
 
-import com.github.jhejderup.data.JDKClassPath;
-import com.github.jhejderup.data.MavenCoordinate;
-import com.github.jhejderup.data.Namespace;
+import com.github.jhejderup.data.type.JDKPackage;
+import com.github.jhejderup.data.type.MavenCoordinate;
+import com.github.jhejderup.data.type.Namespace;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -23,22 +23,22 @@ public final class UniversalType implements Serializable {
 
         if(outer.isPresent()) {
 
-            Namespace global = outer.get();
+            Namespace global = this.outer.get();
 
-            String repoPrefix = "std";
+            String repoPrefix = "";
             if (global instanceof MavenCoordinate){
                 repoPrefix = "mvn";
 
-            } else if (global instanceof JDKClassPath){
+            } else if (global instanceof JDKPackage){
                 repoPrefix = "jdk";
             }
 
             return Stream.concat(
-                    Stream.concat(Stream.of(repoPrefix), Arrays.stream(global.segments)),
-                    Arrays.stream(inner.segments)).toArray(String[]::new);
+                    Stream.concat(Stream.of(repoPrefix), Arrays.stream(global.getSegments())),
+                    Arrays.stream(inner.getSegments())).toArray(String[]::new);
 
         } else {
-            return Stream.concat(Stream.of("__unknown"),Arrays.stream(inner.segments)).toArray(String[]::new);
+            return Arrays.stream(inner.getSegments()).toArray(String[]::new);
         }
 
     }

@@ -1,0 +1,13 @@
+package com.github.jhejderup.data.type;
+
+public final class JavaPackage implements Namespace {
+
+    public final String[] path;
+    public JavaPackage(String... path){ this.path = path;}
+
+    @Override
+    public String[] getSegments() {
+        return this.path;
+    }
+
+}

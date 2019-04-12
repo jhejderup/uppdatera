@@ -1,11 +1,11 @@
-package com.github.jhejderup.data;
+package com.github.jhejderup.data.callgraph;
 
 import com.ibm.wala.classLoader.IMethod;
 
 import java.io.Serializable;
 import java.util.Optional;
 
-public class MethodHierarchy implements Serializable {
+public final class MethodHierarchy implements Serializable {
 
     public final IMethod child;
     public final Optional<IMethod> parent;

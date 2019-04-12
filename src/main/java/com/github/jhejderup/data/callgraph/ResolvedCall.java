@@ -1,11 +1,11 @@
-package com.github.jhejderup.data;
+package com.github.jhejderup.data.callgraph;
 
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.shrikeBT.IInvokeInstruction;
 
 import java.io.Serializable;
 
-public class ResolvedCall implements Serializable {
+public final class ResolvedCall implements Serializable {
 
     public final IMethod target;
     public final IMethod source;
