@@ -39,6 +39,11 @@ public enum JavaPrimitive implements Namespace {
     public String[] getSegments() {
         return new String[]{"java", "primitive", this.name().toLowerCase()};
     }
+
+    @Override
+    public String getNamespaceDelim() {
+        return ".";
+    }
 }
 
 

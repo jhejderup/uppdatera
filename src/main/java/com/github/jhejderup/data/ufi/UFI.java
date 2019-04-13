@@ -1,10 +1,15 @@
 package com.github.jhejderup.data.ufi;
 
+import com.github.jhejderup.data.type.JDKPackage;
+import com.github.jhejderup.data.type.MavenCoordinate;
+import com.github.jhejderup.data.type.Namespace;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public final class UFI implements Serializable {
     public final static String DELIM = "::";
@@ -23,21 +28,58 @@ public final class UFI implements Serializable {
         this.returnType = returnType;
     }
 
+    public static String stringBuilder(UniversalType uty) {
+
+        String buildup = "";
+
+        if (uty.outer.isPresent()) {
+
+            Namespace global = uty.outer.get();
+
+            if (global instanceof MavenCoordinate) {
+                buildup += "mvn";
+
+
+            } else if (global instanceof JDKPackage) {
+                buildup += "jdk";
+            }
+
+            buildup += DELIM;
+            buildup += String.join(global.getNamespaceDelim(), global.getSegments());
+            buildup += DELIM;
+            buildup += String.join(uty.inner.getNamespaceDelim(), uty.inner.getSegments());
+
+
+        } else {
+            buildup += String.join(uty.inner.getNamespaceDelim(), uty.inner.getSegments());
+        }
+
+
+        if (uty instanceof ArrayType) {
+            ArrayType aty = (ArrayType) uty;
+            String brackets = IntStream
+                    .rangeClosed(1, aty.brackets)
+                    .mapToObj(i -> "[]").collect(Collectors.joining(""));
+
+            buildup += brackets;
+        }
+        return buildup;
+    }
+
     @Override
     public String toString() {
 
         String args = parameters.isPresent() ?
                 parameters.get()
                         .stream()
-                        .map(t -> String.join(DELIM, t.getSegments()))
+                        .map(UFI::stringBuilder)
                         .collect(Collectors.joining(",")) : "";
 
 
-        return String.join(DELIM, this.pathType.getSegments()) + DELIM
+        return stringBuilder(this.pathType) + DELIM
                 + this.methodName
                 + "(" + args + ")"
-                + String.join(DELIM, this.returnType.getSegments());
-
+                + stringBuilder(this.returnType);
     }
 
 

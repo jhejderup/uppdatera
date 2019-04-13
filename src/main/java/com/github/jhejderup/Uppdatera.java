@@ -26,8 +26,8 @@ public class Uppdatera {
 
         MavenCoordinate leftCoord = MavenCoordinate.of(args[1]);
         MavenCoordinate rightCoord = MavenCoordinate.of(args[2]);
-
-
+//
+//
 //        List<MavenResolvedCoordinate> clientClasspath = Gradle
 //                .getClasspath(Paths.get(args[0]));
 //
@@ -48,7 +48,7 @@ public class Uppdatera {
 //                .map(s -> s.mappings())
 //                .forEach(s -> s.keySet().stream().forEach(System.out::println));
 //
-//
+////
         SpoonUFIAdapter classtable = SpoonUFIAdapter.withTransitive(leftCoord);
 
 

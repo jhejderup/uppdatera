@@ -26,7 +26,7 @@ public class MavenCoordinate implements Serializable, Namespace {
     }
 
     public String getCanonicalForm() {
-        return String.join(":",
+        return String.join(this.getNamespaceDelim(),
                 this.groupId,
                 this.artifactId,
                 this.version);
@@ -34,7 +34,7 @@ public class MavenCoordinate implements Serializable, Namespace {
 
     @Override
     public String toString() {
-        return "MavenCoordinate(" + this.artifactId + ","
+        return "MavenCoordinate(" + this.groupId + ","
                 + this.artifactId + ","
                 + this.version + ")";
     }
@@ -66,4 +66,7 @@ public class MavenCoordinate implements Serializable, Namespace {
     public String[] getSegments() {
         return new String[]{this.groupId, this.artifactId, this.version};
     }
+
+    @Override
+    public String getNamespaceDelim() { return ":"; }
 }

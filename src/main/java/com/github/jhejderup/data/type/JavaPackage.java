@@ -13,4 +13,9 @@ public final class JavaPackage implements Namespace {
         return this.path;
     }
 
+    @Override
+    public String getNamespaceDelim() {
+        return ".";
+    }
+
 }

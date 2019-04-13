@@ -19,30 +19,6 @@ public class UniversalType implements Serializable {
         this.inner = inner;
     }
 
-    public String[] getSegments() {
-
-        if (outer.isPresent()) {
-
-            Namespace global = this.outer.get();
-
-            String repoPrefix = "";
-            if (global instanceof MavenCoordinate) {
-                repoPrefix = "mvn";
-
-            } else if (global instanceof JDKPackage) {
-                repoPrefix = "jdk";
-            }
-
-            return Stream.concat(
-                    Stream.concat(Stream.of(repoPrefix), Arrays.stream(global.getSegments())),
-                    Arrays.stream(inner.getSegments())).toArray(String[]::new);
-
-        } else {
-            return Arrays.stream(inner.getSegments()).toArray(String[]::new);
-        }
-
-    }
-
     @Override
     public boolean equals(Object o) {
         // self check

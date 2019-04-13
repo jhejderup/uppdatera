@@ -38,6 +38,11 @@ public final class JDKPackage implements Serializable, Namespace {
     }
 
     @Override
+    public String getNamespaceDelim() {
+        return ".";
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(this.version, this.vendor);
     }
