@@ -20,7 +20,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Gradle {
+public class GradleBuild  {
 
 
     private static ProjectConnection connect(Path gradleProject) {
@@ -50,19 +50,25 @@ public class Gradle {
 
     }
 
-    public static List<MavenResolvedCoordinate> getClasspath(Path gradleProject) {
-        ProjectConnection connection = connect(gradleProject);
+    public static File[] findThatJAR(String dirName) {
+        File dir = new File(dirName);
+        return dir.listFiles((dir1, filename) -> filename.endsWith(".jar"));
+    }
+
+
+    public static List<MavenResolvedCoordinate> makeClasspath(Path project) {
+        ProjectConnection connection = connect(project);
 
         try {
-            compile(gradleProject);
+            compile(project);
         } catch (Exception e) {
             throw e;
         }
 
         try {
-            IdeaProject project = connection.getModel(IdeaProject.class);
+            IdeaProject ideaProject = connection.getModel(IdeaProject.class);
 
-            Map<IdeaModule, DomainObjectSet<? extends IdeaDependency>> dependencies = project
+            Map<IdeaModule, DomainObjectSet<? extends IdeaDependency>> dependencies = ideaProject
                     .getModules()
                     .stream()
                     .collect(Collectors.toMap(Function.identity(), IdeaModule::getDependencies));
@@ -79,18 +85,18 @@ public class Gradle {
                                             .collect(Collectors.toList())));
 
 
-            IdeaModule root = project.getModules().getAt(0);
+            IdeaModule root = ideaProject.getModules().getAt(0);
             String outputFolder = root.getGradleProject().getBuildDirectory().getAbsolutePath()
                     + File.separator
                     + "libs";
 
-            File[] jarfile = finder(outputFolder);
+            File[] jarfile = findThatJAR(outputFolder);
             assert jarfile.length == 1;
 
             MavenResolvedCoordinate client =
                     new MavenResolvedCoordinate(
                             "localhost",
-                            project.getName(),
+                            ideaProject.getName(),
                             "XXX",
                             Paths.get(jarfile[0].toURI()));
 
@@ -103,12 +109,6 @@ public class Gradle {
         } finally {
             connection.close();
         }
-
-    }
-
-    public static File[] finder(String dirName) {
-        File dir = new File(dirName);
-        return dir.listFiles((dir1, filename) -> filename.endsWith(".jar"));
 
     }
 }

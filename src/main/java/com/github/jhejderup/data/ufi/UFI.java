@@ -55,10 +55,10 @@ public final class UFI implements Serializable {
         }
 
 
-        if (uty instanceof ArrayType) {
-            ArrayType aty = (ArrayType) uty;
+        if (uty instanceof UniversalArrayType) {
+            UniversalArrayType aty = (UniversalArrayType) uty;
             String brackets = IntStream
-                    .rangeClosed(1, aty.brackets)
+                    .rangeClosed(1, aty.numOfBrackets)
                     .mapToObj(i -> "[]").collect(Collectors.joining(""));
 
             buildup += brackets;

@@ -4,7 +4,7 @@ public class GenerateMavenCG {
 
 
 //    private static String buildClasspath(String mavenCoordinate){
-//        File[] artifacts = Maven.resolver().resolve(mavenCoordinate).withTransitivity().asFile();
+//        File[] artifacts = MavenBuild.resolver().resolve(mavenCoordinate).withTransitivity().asFile();
 //        List<File> arts = Arrays.asList(artifacts);
 //        ArrayList<File> artlst = new ArrayList<>(arts);
 //        List<String> jars = artlst.stream().map(s -> s.getAbsolutePath()).collect(Collectors.toList());

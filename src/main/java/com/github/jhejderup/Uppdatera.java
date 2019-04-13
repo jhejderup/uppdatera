@@ -1,11 +1,12 @@
 package com.github.jhejderup;
 
 
-import com.github.jhejderup.connectors.Gradle;
+import com.github.jhejderup.connectors.GradleBuild;
+import com.github.jhejderup.data.diff.ArtifactDiff;
 import com.github.jhejderup.data.diff.FileDiff;
 import com.github.jhejderup.data.type.MavenCoordinate;
 import com.github.jhejderup.data.type.MavenResolvedCoordinate;
-import com.github.jhejderup.diff.ArtifactDiff;
+import com.github.jhejderup.diff.Differ;
 import com.github.jhejderup.generator.WalaCallgraphConstructor;
 import gumtree.spoon.diff.operations.Operation;
 import spoon.reflect.declaration.CtExecutable;
@@ -26,20 +27,17 @@ public class Uppdatera {
 
         MavenCoordinate leftCoord = MavenCoordinate.of(args[1]);
         MavenCoordinate rightCoord = MavenCoordinate.of(args[2]);
-//
-//
-//        List<MavenResolvedCoordinate> clientClasspath = Gradle
-//                .getClasspath(Paths.get(args[0]));
+
+//        List<MavenResolvedCoordinate> clientClasspath = GradleBuild.makeClasspath(Paths.get(args[0]));
 //
 //        Stream.of(clientClasspath)
 //                .map(WalaCallgraphConstructor::build)
-//                .map(WalaUFIAdapter::wrap)
 //                .map(s -> s.mappings())
 //                .forEach(s -> s.keySet().stream().forEach(System.out::println));
 
 //
-//        List<MavenResolvedCoordinate> mavenClasspath = Maven
-//                .getClasspath(Paths.get("/Users/jhejderup/Desktop/uppdatera/pom.xml"));
+//        List<MavenResolvedCoordinate> mavenClasspath = MavenBuild
+//                .buildClasspath(Paths.get("/Users/jhejderup/Desktop/uppdatera/pom.xml"));
 //
 //
 //        Stream.of(mavenClasspath)
@@ -49,26 +47,12 @@ public class Uppdatera {
 //                .forEach(s -> s.keySet().stream().forEach(System.out::println));
 //
 ////
-        SpoonUFIAdapter classtable = SpoonUFIAdapter.withTransitive(leftCoord);
 
+        ArtifactDiff editScript = Differ.artifact(leftCoord, rightCoord);
 
-        ArtifactDiff
-                .diff(leftCoord, rightCoord)
-                .forEach(diff -> {
-                    if (diff.fileDiff.type != FileDiff.Change.ADDITION && diff.fileDiff.type != FileDiff.Change.COPY) {
-                        if (diff.methodDiffs.isPresent()) {
-                            Map<CtExecutable, List<Operation>> methods = diff.methodDiffs.get();
-                            methods.keySet()
-                                    .stream()
-                                    .map(m -> classtable.convertToUFI(m))
-                                    .forEach(UFI -> {
-                                        System.out.println(UFI);
-                                    });
-                        }
-                    }
-                });
-
-
+        editScript.mappings()
+                .entrySet()
+                .forEach(e -> System.out.println(e.getValue().getSignature() + "<-:-:->" + e.getKey()));
     }
 
 

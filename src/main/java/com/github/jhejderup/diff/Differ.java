@@ -2,10 +2,12 @@ package com.github.jhejderup.diff;
 
 import com.github.gumtreediff.matchers.MappingStore;
 import com.github.gumtreediff.tree.ITree;
+import com.github.jhejderup.connectors.MavenBuild;
+import com.github.jhejderup.data.diff.ArtifactDiff;
 import com.github.jhejderup.data.diff.FileDiff;
 import com.github.jhejderup.data.diff.JavaSourceDiff;
 import com.github.jhejderup.data.type.MavenCoordinate;
-import com.github.jhejderup.resolver.ArtifactResolver;
+import com.github.jhejderup.data.type.MavenResolvedCoordinate;
 import gumtree.spoon.builder.SpoonGumTreeBuilder;
 import gumtree.spoon.diff.Diff;
 import gumtree.spoon.diff.operations.InsertOperation;
@@ -29,27 +31,33 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 
-public class ArtifactDiff {
+public class Differ {
 
-    public static Stream<JavaSourceDiff> diff(MavenCoordinate coordLeft, MavenCoordinate coordRight)
+    public static ArtifactDiff artifact(MavenCoordinate coordLeft, MavenCoordinate coordRight)
             throws IOException, TimeoutException, InterruptedException {
 
         //Add full analyzedClasspath for proper type resolution
-        String[] sourceClasspath = ArtifactResolver
-                .resolveDependencyTree(coordLeft)
-                .map(artifact -> artifact.asFile())
-                .map(file -> file.toString())
+        List<MavenResolvedCoordinate> classpath = MavenBuild.resolveDependencyTree(coordLeft)
+                .map(MavenResolvedCoordinate::of)
+                .collect(Collectors.toList());
+
+        String[] sourceClasspath = classpath
+                .stream()
+                .map(c -> c.jarPath.toString())
                 .distinct()
                 .toArray(String[]::new);
 
         Path leftFolder = fetchAndExtractJARSource(coordLeft);
         Path rightFolder = fetchAndExtractJARSource(coordRight);
 
-        return diffFiles(leftFolder, rightFolder)
-                .filter(ArtifactDiff::isImpactKind)
-                .filter(ArtifactDiff::isJavaFile)
-                .filter(ArtifactDiff::isNotTestFile)
-                .map(d -> diffJavaMethods(d, sourceClasspath));
+        List<JavaSourceDiff> editScript = diffFiles(leftFolder, rightFolder)
+                .filter(Differ::isImpactKind)
+                .filter(Differ::isJavaFile)
+                .filter(Differ::isNotTestFile)
+                .map(d -> diffJavaMethods(d, sourceClasspath))
+                .collect(Collectors.toList());
+
+        return new ArtifactDiff(coordLeft, coordRight, editScript, classpath);
     }
 
     ///
@@ -111,7 +119,7 @@ public class ArtifactDiff {
 
 
     ///
-    /// File level diffing using git diff
+    /// File level diffing using git artifact
     ///
     private static String executeGitDiff(Path leftFolder, Path rightFolder)
             throws InterruptedException, TimeoutException, IOException {
