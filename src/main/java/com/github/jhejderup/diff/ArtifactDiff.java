@@ -2,9 +2,9 @@ package com.github.jhejderup.diff;
 
 import com.github.gumtreediff.matchers.MappingStore;
 import com.github.gumtreediff.tree.ITree;
-import com.github.jhejderup.data.type.MavenCoordinate;
 import com.github.jhejderup.data.diff.FileDiff;
 import com.github.jhejderup.data.diff.JavaSourceDiff;
+import com.github.jhejderup.data.type.MavenCoordinate;
 import com.github.jhejderup.resolver.ArtifactResolver;
 import gumtree.spoon.builder.SpoonGumTreeBuilder;
 import gumtree.spoon.diff.Diff;
@@ -34,7 +34,7 @@ public class ArtifactDiff {
     public static Stream<JavaSourceDiff> diff(MavenCoordinate coordLeft, MavenCoordinate coordRight)
             throws IOException, TimeoutException, InterruptedException {
 
-        //Add full classPath for proper type resolution
+        //Add full analyzedClasspath for proper type resolution
         String[] sourceClasspath = ArtifactResolver
                 .resolveDependencyTree(coordLeft)
                 .map(artifact -> artifact.asFile())

@@ -16,30 +16,30 @@ public final class FileDiff implements Serializable {
         this.type = type;
     }
 
-    @Override
-    public String toString() {
-        return "FileDiff(" + type + "," + srcFile.toString() + "," + dstFile.toString() + ")";
-    }
-
     public static Change getChangeType(String statusCode) {
 
         if (statusCode.startsWith("M")) {
             return Change.MODIFICATION;
-        } else if(statusCode.startsWith("D")) {
+        } else if (statusCode.startsWith("D")) {
             return Change.DELETION;
-        } else if(statusCode.startsWith("A")) {
+        } else if (statusCode.startsWith("A")) {
             return Change.ADDITION;
-        } else if(statusCode.startsWith("R")){
+        } else if (statusCode.startsWith("R")) {
             Change type = FileDiff.Change.RENAME;
             type.setPercentage(Integer.parseInt(statusCode.substring(1)));
             return type;
-        } else if(statusCode.startsWith("C")) {
+        } else if (statusCode.startsWith("C")) {
             Change type = FileDiff.Change.COPY;
             type.setPercentage(Integer.parseInt(statusCode.substring(1)));
             return type;
         } else {
             return Change.UNKNOWN;
         }
+    }
+
+    @Override
+    public String toString() {
+        return "FileDiff(" + type + "," + srcFile.toString() + "," + dstFile.toString() + ")";
     }
 
     public enum Change {
@@ -61,7 +61,7 @@ public final class FileDiff implements Serializable {
 
         @Override
         public String toString() {
-            return this.name() + "("+ this.percentage +")";
+            return this.name() + "(" + this.percentage + ")";
         }
     }
 }

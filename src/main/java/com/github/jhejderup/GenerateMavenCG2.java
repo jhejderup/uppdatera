@@ -15,14 +15,14 @@ public class GenerateMavenCG2 {
     private static Logger logger = LoggerFactory.getLogger(GenerateMavenCG2.class);
 
 
-    private static String buildClasspath(String mavenCoordinate){
-        logger.info("Building classPath of {}", mavenCoordinate);
+    private static String buildClasspath(String mavenCoordinate) {
+        logger.info("Building analyzedClasspath of {}", mavenCoordinate);
         File[] artifacts = Maven.resolver().resolve(mavenCoordinate).withTransitivity().asFile();
         List<File> arts = Arrays.asList(artifacts);
         ArrayList<File> artlst = new ArrayList<>(arts);
         List<String> jars = artlst.stream().map(s -> s.getAbsolutePath()).collect(Collectors.toList());
         String path = String.join(":", new ArrayList<>(jars));
-        logger.info("The classPath of {} is {} ",mavenCoordinate, path);
+        logger.info("The analyzedClasspath of {} is {} ", mavenCoordinate, path);
         return path;
 
     }

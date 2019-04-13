@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public final class UniversalType implements Serializable {
+public class UniversalType implements Serializable {
     public final Optional<Namespace> outer;
     public final Namespace inner;
 
@@ -19,17 +19,17 @@ public final class UniversalType implements Serializable {
         this.inner = inner;
     }
 
-    public String[] getSegments(){
+    public String[] getSegments() {
 
-        if(outer.isPresent()) {
+        if (outer.isPresent()) {
 
             Namespace global = this.outer.get();
 
             String repoPrefix = "";
-            if (global instanceof MavenCoordinate){
+            if (global instanceof MavenCoordinate) {
                 repoPrefix = "mvn";
 
-            } else if (global instanceof JDKPackage){
+            } else if (global instanceof JDKPackage) {
                 repoPrefix = "jdk";
             }
 
@@ -55,12 +55,12 @@ public final class UniversalType implements Serializable {
         if (getClass() != o.getClass())
             return false;
         UniversalType ty = (UniversalType) o;
-        return Objects.equals(this.outer,ty.outer) &&
+        return Objects.equals(this.outer, ty.outer) &&
                 Objects.equals(this.inner, ty.inner);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.outer,this.inner);
+        return Objects.hash(this.outer, this.inner);
     }
 }

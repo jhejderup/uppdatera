@@ -33,7 +33,7 @@ public final class WalaCallgraphConstructor {
     private static Predicate<CGNode> applicationLoaderFilter =
             node -> isApplication(node.getMethod().getDeclaringClass());
 
-    public static WalaCallGraph build(List<MavenResolvedCoordinate> coordinates)  {
+    public static WalaCallGraph build(List<MavenResolvedCoordinate> coordinates) {
 
         try {
             String classpath = coordinates.stream().map(c -> c.jarPath.toString()).collect(joining(":"));
@@ -69,6 +69,7 @@ public final class WalaCallgraphConstructor {
             return null;
         }
     }
+
     public static List<ResolvedCall> resolveCalls(CallGraph cg) {
         Iterable<CGNode> cgNodes = () -> cg.iterator();
         List<ResolvedCall> calls = StreamSupport
@@ -91,6 +92,7 @@ public final class WalaCallgraphConstructor {
                 .collect(Collectors.toList());
         return calls;
     }
+
     public static List<MethodHierarchy> getAllMethods(ClassHierarchy cha) {
         Iterable<IClass> classes = () -> cha.getLoader(ClassLoaderReference.Application).iterateAllClasses();
         Stream<IMethod> methods = StreamSupport.stream(classes.spliterator(), false)
@@ -115,6 +117,7 @@ public final class WalaCallgraphConstructor {
         }).collect(Collectors.toList());
         return info;
     }
+
     ///
     /// Get overriden or implemented method
     ///
@@ -132,6 +135,7 @@ public final class WalaCallgraphConstructor {
             return Optional.empty();
         }
     }
+
     public static Optional<IMethod> getImplemented(IMethod method) {
         return method.getDeclaringClass()
                 .getAllImplementedInterfaces() //As interfaces can extend other interfaces, we get all ancestors
@@ -159,6 +163,7 @@ public final class WalaCallgraphConstructor {
         String jarPath = jarFile.getName();
         return jarPath;
     }
+
     ///
     /// Create entry points (stuff taken from  woutrrr/lapp)
     ///
@@ -172,6 +177,7 @@ public final class WalaCallgraphConstructor {
                 .collect(Collectors.toList());
         return new ArrayList<>(entryPoints);
     }
+
     ///
     /// Helper functions
     ///

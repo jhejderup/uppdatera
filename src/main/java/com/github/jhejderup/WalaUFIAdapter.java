@@ -3,6 +3,7 @@ package com.github.jhejderup;
 
 import com.github.jhejderup.data.callgraph.WalaCallGraph;
 import com.github.jhejderup.data.type.*;
+import com.github.jhejderup.data.ufi.ArrayType;
 import com.github.jhejderup.data.ufi.UFI;
 import com.github.jhejderup.data.ufi.UniversalFunctionIdentifier;
 import com.github.jhejderup.data.ufi.UniversalType;
@@ -10,6 +11,7 @@ import com.github.jhejderup.generator.WalaCallgraphConstructor;
 import com.ibm.wala.classLoader.ArrayClass;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IMethod;
+import com.ibm.wala.types.TypeName;
 import com.ibm.wala.types.TypeReference;
 
 import java.io.Serializable;
@@ -31,7 +33,7 @@ public final class WalaUFIAdapter implements UniversalFunctionIdentifier<IMethod
 
     private WalaUFIAdapter(WalaCallGraph callGraph) {
         this.callGraph = callGraph;
-        this.jarToCoordinate = callGraph.classPath
+        this.jarToCoordinate = callGraph.analyzedClasspath
                 .stream()
                 .collect(toMap(c -> c.jarPath.toString(), Function.identity()));
     }
@@ -58,20 +60,40 @@ public final class WalaUFIAdapter implements UniversalFunctionIdentifier<IMethod
         }
     }
 
+    private UniversalType resolveArrayType(TypeReference tyref) {
+        assert tyref.isArrayType();
+
+        TypeName ty = tyref.getName().parseForArrayElementName();
+        String ref = tyref.getName().toString();
+        int countBrackets = ref.length() - ref.replace("[", "").length();
+
+        if (ty.isPrimitiveType()) {
+            return new ArrayType(Optional.of(JDKPackage.getInstance()), JavaPrimitive.of(tyref), countBrackets);
+        } else if (ty.isClassType()) {
+            IClass klass = this.callGraph.rawcg.getClassHierarchy().lookupClass(tyref);
+            Namespace inner = klass != null ?
+                    new JavaPackage(((klass.getName().toString()).substring(1)).substring(1).split("/")) :
+                    new JavaPackage("_unknownType", tyref.getName().toString());
+            Optional<Namespace> outer = klass != null ? getGlobalPortion(klass) : Optional.empty();
+            return new ArrayType(outer, inner, countBrackets);
+        } else {
+            return new UniversalType(Optional.empty(), new JavaPackage("unknown"));
+        }
+    }
+
 
     private UniversalType resolveTypeRef(TypeReference tyref) {
-        if(tyref.isPrimitiveType()) {
-            return new UniversalType(Optional.empty(), JavaPrimitive.of(tyref));
+        if (tyref.isPrimitiveType()) {
+            return new UniversalType(Optional.of(JDKPackage.getInstance()), JavaPrimitive.of(tyref));
         } else if (tyref.isClassType()) {
-            IClass klass = this.callGraph.walaGraph.getClassHierarchy().lookupClass(tyref);
+            IClass klass = this.callGraph.rawcg.getClassHierarchy().lookupClass(tyref);
             Namespace inner = klass != null ?
                     new JavaPackage((klass.getName().toString()).substring(1).split("/")) :
                     new JavaPackage("_unknownType", tyref.getName().toString());
             Optional<Namespace> outer = klass != null ? getGlobalPortion(klass) : Optional.empty();
             return new UniversalType(outer, inner);
-        } else if(tyref.isArrayType()) {
-            return new UniversalType(Optional.empty(), new JavaPackage("TODO", tyref.getArrayElementType().getName().toString()));
-
+        } else if (tyref.isArrayType()) {
+            return resolveArrayType(tyref);
         } else {
             return new UniversalType(Optional.empty(), new JavaPackage("unknown"));
         }
@@ -101,7 +123,7 @@ public final class WalaUFIAdapter implements UniversalFunctionIdentifier<IMethod
     @Override
     public Map<UFI, IMethod> mappings() {
         return WalaCallgraphConstructor
-                .resolveCalls(callGraph.walaGraph)
+                .resolveCalls(callGraph.rawcg)
                 .stream()
                 .flatMap(call -> Stream.of(call.source, call.target))
                 .collect(toMap(c -> convertToUFI(c), Function.identity(), (v1, v2) -> v1));

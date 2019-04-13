@@ -62,6 +62,16 @@ public class AstComperator {
         this.classPath = classPath;
     }
 
+    public static void main(String[] args) throws Exception {
+        if (args.length != 2) {
+            System.out.println("Usage: DiffSpoon <file_1>  <file_2>");
+            return;
+        }
+
+        final Diff result = new AstComperator().compare(new File(args[0]), new File(args[1]));
+        System.out.println(result.toString());
+    }
+
     protected Factory createFactory() {
         Factory factory = new FactoryImpl(new DefaultCoreFactory(), new StandardEnvironment());
         factory.getEnvironment().setSourceClasspath(classPath);
@@ -120,16 +130,6 @@ public class AstComperator {
     public CtType<?> getCtType(String content) {
         VirtualFile resource = new VirtualFile(content, "/test");
         return getCtType(resource);
-    }
-
-    public static void main(String[] args) throws Exception {
-        if (args.length != 2) {
-            System.out.println("Usage: DiffSpoon <file_1>  <file_2>");
-            return;
-        }
-
-        final Diff result = new AstComperator().compare(new File(args[0]), new File(args[1]));
-        System.out.println(result.toString());
     }
 
 }

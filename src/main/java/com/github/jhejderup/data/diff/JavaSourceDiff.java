@@ -14,7 +14,7 @@ public final class JavaSourceDiff implements Serializable {
     public final Optional<Map<CtExecutable, List<Operation>>> methodDiffs;
 
 
-    public JavaSourceDiff(FileDiff fileDiff, Optional<Map<CtExecutable, List<Operation>>> methodDiffs){
+    public JavaSourceDiff(FileDiff fileDiff, Optional<Map<CtExecutable, List<Operation>>> methodDiffs) {
         this.fileDiff = fileDiff;
         this.methodDiffs = methodDiffs;
     }

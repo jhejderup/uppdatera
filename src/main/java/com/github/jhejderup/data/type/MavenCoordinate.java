@@ -1,14 +1,7 @@
 package com.github.jhejderup.data.type;
 
-import org.gradle.tooling.model.GradleModuleVersion;
-import org.gradle.tooling.model.idea.IdeaSingleEntryLibraryDependency;
-import org.jboss.shrinkwrap.resolver.api.maven.MavenResolvedArtifact;
-
 import java.io.Serializable;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Objects;
-import java.util.Optional;
 
 
 public class MavenCoordinate implements Serializable, Namespace {
@@ -25,18 +18,18 @@ public class MavenCoordinate implements Serializable, Namespace {
 
     }
 
-    public String getCanonicalForm() {
-        return String.join(":",
-                this.groupId,
-                this.artifactId,
-                this.version);
-    }
-
     public static MavenCoordinate of(String canonicalform) {
         String[] segments = canonicalform.split(":");
         assert segments.length == 3;
         return new MavenCoordinate(segments[0], segments[1], segments[2]);
 
+    }
+
+    public String getCanonicalForm() {
+        return String.join(":",
+                this.groupId,
+                this.artifactId,
+                this.version);
     }
 
     @Override

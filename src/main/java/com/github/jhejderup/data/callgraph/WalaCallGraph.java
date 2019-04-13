@@ -1,6 +1,5 @@
 package com.github.jhejderup.data.callgraph;
 
-import com.github.jhejderup.data.type.MavenCoordinate;
 import com.github.jhejderup.data.type.MavenResolvedCoordinate;
 import com.ibm.wala.ipa.callgraph.CallGraph;
 
@@ -9,11 +8,11 @@ import java.util.List;
 
 public final class WalaCallGraph implements Serializable {
 
-    public final CallGraph walaGraph;
-    public final List<MavenResolvedCoordinate> classPath;
+    public final CallGraph rawcg;
+    public final List<MavenResolvedCoordinate> analyzedClasspath;
 
-    public WalaCallGraph(CallGraph walaGraph, List<MavenResolvedCoordinate> classPath) {
-        this.walaGraph = walaGraph;
-        this.classPath = classPath;
+    public WalaCallGraph(CallGraph rawcg, List<MavenResolvedCoordinate> analyzedClasspath) {
+        this.rawcg = rawcg;
+        this.analyzedClasspath = analyzedClasspath;
     }
 }

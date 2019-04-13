@@ -7,10 +7,8 @@ import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jboss.shrinkwrap.resolver.api.maven.MavenArtifactInfo;
 import org.jboss.shrinkwrap.resolver.api.maven.MavenResolvedArtifact;
 
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import java.util.Map;
 import java.util.function.Function;
 import java.util.jar.JarFile;
@@ -26,7 +24,7 @@ public class ArtifactResolver {
     }
 
     private static MavenResolvedArtifact resolveMavenArtifactInfo(MavenArtifactInfo info) {
-        if (info instanceof MavenResolvedArtifact){
+        if (info instanceof MavenResolvedArtifact) {
             return (MavenResolvedArtifact) info;
         } else {
             return Maven.resolver().resolve(info.getCoordinate().toCanonicalForm())
@@ -47,11 +45,11 @@ public class ArtifactResolver {
 
     }
 
-    public static Stream<Map<String, MavenResolvedCoordinate>> getClasses(MavenResolvedArtifact artifact){
+    public static Stream<Map<String, MavenResolvedCoordinate>> getClasses(MavenResolvedArtifact artifact) {
         try {
             JarFile jar = new JarFile(artifact.asFile());
             return Stream.of(jar.stream()
-                    .filter(entry ->  entry.getName().endsWith(".class"))
+                    .filter(entry -> entry.getName().endsWith(".class"))
                     .map(entry -> entry.getName().replaceAll("/", "\\."))
                     .map(ArtifactResolver::removeExtension)
                     .collect(Collectors.toMap(Function.identity(), k -> MavenResolvedCoordinate.of(artifact))));

@@ -1,7 +1,5 @@
 package com.github.jhejderup.data.ufi;
 
-import com.github.jhejderup.data.ufi.UniversalType;
-
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
@@ -9,12 +7,11 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public final class UFI implements Serializable {
+    public final static String DELIM = "::";
     public final UniversalType pathType;
     public final String methodName;
     public final Optional<List<UniversalType>> parameters;
     public final UniversalType returnType;
-
-    public final static String DELIM = "::";
 
     public UFI(UniversalType pathType,
                String methodName,
@@ -33,12 +30,12 @@ public final class UFI implements Serializable {
                 parameters.get()
                         .stream()
                         .map(t -> String.join(DELIM, t.getSegments()))
-                        .collect( Collectors.joining(",") ) : "";
+                        .collect(Collectors.joining(",")) : "";
 
 
         return String.join(DELIM, this.pathType.getSegments()) + DELIM
                 + this.methodName
-                + "(" + args+ ")"
+                + "(" + args + ")"
                 + String.join(DELIM, this.returnType.getSegments());
 
     }
@@ -55,8 +52,8 @@ public final class UFI implements Serializable {
         // type check and cast
         if (getClass() != o.getClass())
             return false;
-        UFI ufi = (UFI)o;
-        return Objects.equals(this.toString(),ufi.toString());
+        UFI ufi = (UFI) o;
+        return Objects.equals(this.toString(), ufi.toString());
     }
 
     @Override

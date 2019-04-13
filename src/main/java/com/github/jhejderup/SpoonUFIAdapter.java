@@ -1,7 +1,7 @@
 package com.github.jhejderup;
 
-import com.github.jhejderup.data.diff.JavaSourceDiff;
 import com.github.jhejderup.data.type.*;
+import com.github.jhejderup.data.ufi.ArrayType;
 import com.github.jhejderup.data.ufi.UFI;
 import com.github.jhejderup.data.ufi.UniversalFunctionIdentifier;
 import com.github.jhejderup.data.ufi.UniversalType;
@@ -9,6 +9,7 @@ import com.github.jhejderup.resolver.ArtifactResolver;
 import spoon.reflect.declaration.CtExecutable;
 import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.declaration.CtType;
+import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.reference.CtTypeReference;
 
 import java.io.Serializable;
@@ -29,7 +30,7 @@ public final class SpoonUFIAdapter implements UniversalFunctionIdentifier<CtExec
         this.classToCoordinate = buildClassLookupTable(coordinate);
     }
 
-    public static SpoonUFIAdapter withTransitive(MavenCoordinate coordinate)  {
+    public static SpoonUFIAdapter withTransitive(MavenCoordinate coordinate) {
         return new SpoonUFIAdapter(coordinate);
     }
 
@@ -49,16 +50,43 @@ public final class SpoonUFIAdapter implements UniversalFunctionIdentifier<CtExec
     }
 
     private UniversalType resolveSpoonType(CtTypeReference type) {
+
         if (type.isPrimitive()) {
+
+            if (type instanceof CtArrayTypeReference) {
+                return new ArrayType(
+                        Optional.of(JDKPackage.getInstance()),
+                        JavaPrimitive.valueOf(type.getSimpleName().toUpperCase()),
+                        ((CtArrayTypeReference) type).getDimensionCount()  // number of '[]'
+                );
+            }
+
             return new UniversalType(
-                    Optional.empty(), JavaPrimitive.valueOf(type.getSimpleName().toUpperCase()));
+                    Optional.of(JDKPackage.getInstance()),
+                    JavaPrimitive.valueOf(type.getSimpleName().toUpperCase()));
         } else {
             if (type.getQualifiedName().startsWith("java")) {
+
+                if (type instanceof CtArrayTypeReference) {
+                    return new ArrayType(
+                            Optional.of(JDKPackage.getInstance()),
+                            new JavaPackage(type.getQualifiedName().split("\\.")),
+                            ((CtArrayTypeReference) type).getDimensionCount()  // number of '[]'
+                    );
+                }
+
                 return new UniversalType(
                         Optional.of(JDKPackage.getInstance()),
                         new JavaPackage(type.getQualifiedName().split("\\.")));
             } else {
                 if (this.classToCoordinate.containsKey(type.getQualifiedName())) {
+                    if (type instanceof CtArrayTypeReference) {
+                        return new ArrayType(
+                                Optional.of(this.classToCoordinate.get(type.getQualifiedName())),
+                                new JavaPackage(type.getQualifiedName().split("\\.")),
+                                ((CtArrayTypeReference) type).getDimensionCount()  // number of '[]'
+                        );
+                    }
                     return new UniversalType(
                             Optional.of(this.classToCoordinate.get(type.getQualifiedName())),
                             new JavaPackage(type.getQualifiedName().split("\\.")));

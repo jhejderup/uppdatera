@@ -50,9 +50,9 @@ public class GenerateMavenCG {
 //                .stream()
 //                .peek(s -> engine.setDotOutputFile("/Users/jhejderup/Desktop/callgraphs",s))
 //                .map(GenerateMavenCG::buildClasspath)
-//                .map(classPath -> {
+//                .map(analyzedClasspath -> {
 //                    try {
-//                        return WalaCallgraphConstructor.build(classPath);
+//                        return WalaCallgraphConstructor.build(analyzedClasspath);
 //                    } catch (Exception e) {
 //                        e.printStackTrace();
 //                        return null;
