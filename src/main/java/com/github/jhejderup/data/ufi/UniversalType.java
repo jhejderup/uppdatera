@@ -1,14 +1,10 @@
 package com.github.jhejderup.data.ufi;
 
-import com.github.jhejderup.data.type.JDKPackage;
-import com.github.jhejderup.data.type.MavenCoordinate;
 import com.github.jhejderup.data.type.Namespace;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 public class UniversalType implements Serializable {
     public final Optional<Namespace> outer;

@@ -37,7 +37,8 @@ public class Differ {
             throws IOException, TimeoutException, InterruptedException {
 
         //Add full analyzedClasspath for proper type resolution
-        List<MavenResolvedCoordinate> classpath = MavenBuild.resolveDependencyTree(coordLeft)
+        List<MavenResolvedCoordinate> classpath = MavenBuild
+                .resolveDependencyTree(coordLeft)
                 .map(MavenResolvedCoordinate::of)
                 .collect(Collectors.toList());
 

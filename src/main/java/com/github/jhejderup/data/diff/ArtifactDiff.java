@@ -11,15 +11,13 @@ import spoon.reflect.declaration.CtType;
 import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.reference.CtTypeReference;
 
-import java.io.IOException;
 import java.io.Serializable;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -42,29 +40,11 @@ public final class ArtifactDiff implements Serializable, UniversalFunctionIdenti
         this.classToCoordinate = createLookupTable();
     }
 
-    private static Map<String, MavenResolvedCoordinate> getClasses(MavenResolvedCoordinate coord) {
-        try {
-            JarFile jar = new JarFile(coord.jarPath.toFile());
-            return jar.stream()
-                    .filter(entry -> entry.getName().endsWith(".class"))
-                    .map(entry -> entry.getName().replaceAll("/", "\\."))
-                    .map(ArtifactDiff::removeExtension)
-                    .collect(toMap(Function.identity(), k -> coord));
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private static String removeExtension(String fileName) {
-        return fileName.substring(0, fileName.lastIndexOf("."));
-    }
 
     private Map<String, MavenResolvedCoordinate> createLookupTable() {
         return this.analyzedClasspath
                 .stream()
-                .map(ArtifactDiff::getClasses)
+                .map(MavenResolvedCoordinate::getClasses)
                 .flatMap(m -> m.entrySet().stream())
                 .distinct()
                 .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));

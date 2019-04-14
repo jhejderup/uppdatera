@@ -5,7 +5,7 @@ import com.github.jhejderup.data.type.Namespace;
 import java.util.Optional;
 
 
-public final class UniversalArrayType extends UniversalType  {
+public final class UniversalArrayType extends UniversalType {
 
     public final int numOfBrackets;
 

@@ -57,6 +57,7 @@ public class MavenCoordinate implements Serializable, Namespace {
                         Objects.equals(this.version, coord.version);
     }
 
+
     @Override
     public int hashCode() {
         return Objects.hash(this.groupId, this.artifactId, this.version);
@@ -68,5 +69,7 @@ public class MavenCoordinate implements Serializable, Namespace {
     }
 
     @Override
-    public String getNamespaceDelim() { return ":"; }
+    public String getNamespaceDelim() {
+        return ":";
+    }
 }

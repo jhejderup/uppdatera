@@ -45,7 +45,7 @@ public class MavenBuild {
 
     }
 
-    public List<MavenResolvedCoordinate> makeClasspath(Path project) {
+    public static List<MavenResolvedCoordinate> makeClasspath(Path project) {
         BuiltProject buildProject = EmbeddedMaven
                 .forProject(project.toFile())
                 .useDefaultDistribution()
