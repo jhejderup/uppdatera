@@ -31,6 +31,8 @@ public final class MavenResolvedCoordinate extends MavenCoordinate implements Se
                 artifact.as(Path.class));
     }
 
+
+
     public static MavenResolvedCoordinate of(IdeaSingleEntryLibraryDependency d) {
         GradleModuleVersion mod = d.getGradleModuleVersion();
         return new MavenResolvedCoordinate(

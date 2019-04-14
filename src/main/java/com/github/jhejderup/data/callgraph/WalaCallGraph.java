@@ -1,5 +1,6 @@
 package com.github.jhejderup.data.callgraph;
 
+import com.github.jhejderup.data.ModuleClasspath;
 import com.github.jhejderup.data.type.*;
 import com.github.jhejderup.data.ufi.UFI;
 import com.github.jhejderup.data.ufi.UniversalArrayType;
@@ -27,13 +28,14 @@ import static java.util.stream.Collectors.toMap;
 public final class WalaCallGraph implements Serializable, UniversalFunctionIdentifier<IMethod> {
 
     public final CallGraph callgraph;
-    public final List<MavenResolvedCoordinate> analyzedClasspath;
+    public final ModuleClasspath analyzedClasspath;
     public final Map<String, MavenResolvedCoordinate> jarToCoordinate;
 
-    public WalaCallGraph(CallGraph callgraph, List<MavenResolvedCoordinate> analyzedClasspath) {
+    public WalaCallGraph(CallGraph callgraph, ModuleClasspath analyzedClasspath) {
         this.callgraph = callgraph;
         this.analyzedClasspath = analyzedClasspath;
         this.jarToCoordinate = analyzedClasspath
+                .getCompleteClasspath()
                 .stream()
                 .collect(toMap(c -> c.jarPath.toString(), Function.identity()));
     }
@@ -98,11 +100,11 @@ public final class WalaCallGraph implements Serializable, UniversalFunctionIdent
     @Override
     public UFI convertToUFI(IMethod item) {
         //1. create resolved path
-        Optional<Namespace> outer = getGlobalNamespace(item.getDeclaringClass());
-        Namespace inner = new JavaPackage((item.getDeclaringClass().getName().toString()).substring(1).split("/"));
-        UniversalType path = new UniversalType(outer, inner);
+        var outer = getGlobalNamespace(item.getDeclaringClass());
+        var inner = new JavaPackage((item.getDeclaringClass().getName().toString()).substring(1).split("/"));
+        var path = new UniversalType(outer, inner);
         //2. extract methodname
-        String methodName = item.getName().toString();
+        var methodName = item.getName().toString();
         //3. resolve return type
         UniversalType returnType = item.isInit() ? resolveTypeRef(item.getParameterType(0))
                 : resolveTypeRef(item.getReturnType());

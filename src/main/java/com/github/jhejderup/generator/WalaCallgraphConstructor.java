@@ -1,9 +1,9 @@
 package com.github.jhejderup.generator;
 
+import com.github.jhejderup.data.ModuleClasspath;
 import com.github.jhejderup.data.callgraph.MethodHierarchy;
 import com.github.jhejderup.data.callgraph.ResolvedCall;
 import com.github.jhejderup.data.callgraph.WalaCallGraph;
-import com.github.jhejderup.data.type.MavenResolvedCoordinate;
 import com.ibm.wala.classLoader.*;
 import com.ibm.wala.ipa.callgraph.*;
 import com.ibm.wala.ipa.callgraph.impl.DefaultEntrypoint;
@@ -20,9 +20,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.joining;
@@ -33,37 +31,40 @@ public final class WalaCallgraphConstructor {
     private static Predicate<CGNode> applicationLoaderFilter =
             node -> isApplication(node.getMethod().getDeclaringClass());
 
-    public static WalaCallGraph build(List<MavenResolvedCoordinate> coordinates) {
+    public static WalaCallGraph build(ModuleClasspath analysisClasspath) {
 
         try {
-            String classpath = coordinates.stream().map(c -> c.jarPath.toString()).collect(joining(":"));
+            var classpath = analysisClasspath
+                    .getCompleteClasspath()
+                    .stream()
+                    .map(c -> c.jarPath.toString()).collect(joining(":"));
 
-            classpath = coordinates.get(0).jarPath.toString();
+            classpath = analysisClasspath.project.jarPath.toString();
 
             //1. Fetch exclusion file
-            ClassLoader classLoader = WalaCallgraphConstructor.class.getClassLoader();
-            File exclusionFile = new File(classLoader.getResource("Java60RegressionExclusions.txt").getFile());
+            var classLoader = WalaCallgraphConstructor.class.getClassLoader();
+            var exclusionFile = new File(classLoader.getResource("Java60RegressionExclusions.txt").getFile());
 
             //2. Set the analysis scope
-            AnalysisScope scope = AnalysisScopeReader.makeJavaBinaryAnalysisScope(classpath, exclusionFile);
+            var scope = AnalysisScopeReader.makeJavaBinaryAnalysisScope(classpath, exclusionFile);
 
             //3. Class Hierarchy for name resolution -> missing superclasses are replaced by the ClassHierarchy root,
             //   i.e. java.lang.Object
-            ClassHierarchy cha = ClassHierarchyFactory.makeWithRoot(scope);
+            var cha = ClassHierarchyFactory.makeWithRoot(scope);
 
             //4. Specify Entrypoints -> all non-primordial public entrypoints (also with declared parameters, not sub-types)
-            ArrayList<Entrypoint> entryPoints = getEntrypoints(cha);
+            var entryPoints = getEntrypoints(cha);
 
             //5. Encapsulates various analysis options
-            AnalysisOptions options = new AnalysisOptions(scope, entryPoints);
-            AnalysisCache cache = new AnalysisCacheImpl();
+            var options = new AnalysisOptions(scope, entryPoints);
+            var cache = new AnalysisCacheImpl();
 
             //6 Build the call graph
             //0-CFA points-to analysis
             // CallGraphBuilder builder = Util.makeZeroCFABuilder(Language.JAVA, options, cache, cha, scope);
-            CallGraphBuilder builder = Util.makeRTABuilder(options, cache, cha, scope);
-            CallGraph callGraph = builder.makeCallGraph(options, null);
-            return new WalaCallGraph(callGraph, coordinates);
+            var builder = Util.makeRTABuilder(options, cache, cha, scope);
+            var callGraph = builder.makeCallGraph(options, null);
+            return new WalaCallGraph(callGraph, analysisClasspath);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -72,7 +73,7 @@ public final class WalaCallgraphConstructor {
 
     public static List<ResolvedCall> resolveCalls(CallGraph cg) {
         Iterable<CGNode> cgNodes = () -> cg.iterator();
-        List<ResolvedCall> calls = StreamSupport
+        var calls = StreamSupport
                 .stream(cgNodes.spliterator(), false)
                 .filter(applicationLoaderFilter)
                 .flatMap(node -> {
@@ -95,10 +96,10 @@ public final class WalaCallgraphConstructor {
 
     public static List<MethodHierarchy> getAllMethods(ClassHierarchy cha) {
         Iterable<IClass> classes = () -> cha.getLoader(ClassLoaderReference.Application).iterateAllClasses();
-        Stream<IMethod> methods = StreamSupport.stream(classes.spliterator(), false)
+        var methods = StreamSupport.stream(classes.spliterator(), false)
                 .flatMap(klass -> klass.getDeclaredMethods().parallelStream());
 
-        List<MethodHierarchy> info = methods.map(m -> {
+        var info = methods.map(m -> {
             //Check inheritance
             Optional<IMethod> inheritM = getOverriden(m);
 
@@ -122,13 +123,13 @@ public final class WalaCallgraphConstructor {
     /// Get overriden or implemented method
     ///
     public static Optional<IMethod> getOverriden(IMethod method) {
-        IClass c = method.getDeclaringClass();
-        IClass parent = c.getSuperclass();
+        var c = method.getDeclaringClass();
+        var parent = c.getSuperclass();
         if (parent == null) {
             return Optional.empty();
         } else {
-            MethodReference ref = MethodReference.findOrCreate(parent.getReference(), method.getSelector());
-            IMethod m2 = method.getClassHierarchy().resolveMethod(ref);
+            var ref = MethodReference.findOrCreate(parent.getReference(), method.getSelector());
+            var m2 = method.getClassHierarchy().resolveMethod(ref);
             if (m2 != null && !m2.equals(method)) {
                 return Optional.of(m2);
             }
@@ -157,10 +158,10 @@ public final class WalaCallgraphConstructor {
     /// Fetch JAR File
     ///
     public static String fetchJarFile(IClass klass) {
-        ShrikeClass shrikeKlass = (ShrikeClass) klass;
-        JarFileEntry moduleEntry = (JarFileEntry) shrikeKlass.getModuleEntry();
-        JarFile jarFile = moduleEntry.getJarFile();
-        String jarPath = jarFile.getName();
+        var shrikeKlass = (ShrikeClass) klass;
+        var moduleEntry = (JarFileEntry) shrikeKlass.getModuleEntry();
+        var jarFile = moduleEntry.getJarFile();
+        var jarPath = jarFile.getName();
         return jarPath;
     }
 
@@ -169,7 +170,7 @@ public final class WalaCallgraphConstructor {
     ///
     private static ArrayList<Entrypoint> getEntrypoints(ClassHierarchy cha) {
         Iterable<IClass> classes = () -> cha.iterator();
-        List<Entrypoint> entryPoints = StreamSupport.stream(classes.spliterator(), false)
+        var entryPoints = StreamSupport.stream(classes.spliterator(), false)
                 .filter(WalaCallgraphConstructor::isPublicClass)
                 .flatMap(klass -> klass.getAllMethods().parallelStream())
                 .filter(WalaCallgraphConstructor::isPublicMethod)

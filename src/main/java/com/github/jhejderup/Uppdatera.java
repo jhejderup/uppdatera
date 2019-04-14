@@ -2,57 +2,77 @@ package com.github.jhejderup;
 
 
 import com.github.jhejderup.connectors.GradleBuild;
-import com.github.jhejderup.data.diff.ArtifactDiff;
-import com.github.jhejderup.data.type.MavenCoordinate;
-import com.github.jhejderup.data.type.MavenResolvedCoordinate;
-import com.github.jhejderup.diff.Differ;
+import com.github.jhejderup.connectors.MavenBuild;
 import com.github.jhejderup.generator.WalaCallgraphConstructor;
-import com.ibm.wala.properties.WalaProperties;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Properties;
-import java.util.stream.Stream;
 
 
 public class Uppdatera {
 
-
-    public static void main(String[] args)
-            throws Exception {
-
-        assert Paths.get(args[0]).isAbsolute();
-
-        var leftCoord = MavenCoordinate.of(args[1]);
-        var rightCoord = MavenCoordinate.of(args[2]);
+    private static Logger logger = LoggerFactory.getLogger(Uppdatera.class);
 
 
-        var clientClasspath = GradleBuild.makeClasspath(Paths.get(args[0]));
 
-        Stream.of(clientClasspath)
-                .map(WalaCallgraphConstructor::build)
-                .map(s -> s.mappings())
-                .forEach(s -> s.keySet().stream().forEach(System.out::println));
-
-//
-//        List<MavenResolvedCoordinate> mavenClasspath = MavenBuild
-//                .buildClasspath(Paths.get("/Users/jhejderup/Desktop/uppdatera/pom.xml"));
-//
-//
-//        Stream.of(mavenClasspath)
-//                .map(WalaCallgraphConstructor::build)
-//                .map(WalaUFIAdapter::wrap)
-//                .map(s -> s.mappings())
-//                .forEach(s -> s.keySet().stream().forEach(System.out::println));
-//
-////
-
-       var editScript = Differ.artifact(leftCoord, rightCoord);
-
-        editScript.mappings()
-                .entrySet()
-                .forEach(e -> System.out.println(e.getValue().getSignature() + "<-:-:->" + e.getKey()));
+    private static boolean isMavenProject(Path repository) {
+        var pomFile = Paths.get(repository.toString(),"pom.xml");
+                return Files.exists(pomFile);
     }
 
 
+    private static boolean isGradleProject(Path repository) {
+        var gradleFile = Paths.get(repository.toString(),"build.gradle");
+        return Files.exists(gradleFile);
+    }
+
+    private static boolean isMavenOrGradleProject(Path repository){
+        return isGradleProject(repository) || isMavenProject(repository);
+    }
+
+
+
+
+    public static void main(String[] args)  {
+
+        try {
+            Path tempRepository = Files.createTempDirectory("uppdatera-git");
+            logger.info("Cloning Github repository '{}'", args[0]);
+            var git = Git.cloneRepository()
+                    .setURI(String.format("https://github.com/%s.git", args[0]))
+                    .setDirectory(tempRepository.toFile())
+                    .call();
+            logger.info("Successfully cloned to {}", tempRepository.toFile());
+
+            if(isMavenOrGradleProject(tempRepository)){
+                logger.info("Project is identified as a Gradle/Maven Project");
+                var modules = isGradleProject(tempRepository) ? GradleBuild.resolveClasspath(tempRepository) :
+                        MavenBuild.resolveClasspath(Path.of(tempRepository.toString(),"pom.xml"));
+
+                modules.stream()
+                        .map(WalaCallgraphConstructor::build)
+                        .forEach(cg ->cg.mappings().keySet().stream().forEach(System.out::println));
+
+            } else {
+                logger.error("Not a Gradle or Maven Project");
+                return;
+            }
+
+
+
+
+            
+
+        } catch (IOException | GitAPIException e) {
+            logger.error("An exception occurred when cloning the '{}' repository", args[0], e);
+
+        }
+
+    }
 }
