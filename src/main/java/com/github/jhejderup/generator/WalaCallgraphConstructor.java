@@ -1,5 +1,6 @@
 package com.github.jhejderup.generator;
 
+import com.github.jhejderup.Uppdatera;
 import com.github.jhejderup.data.ModuleClasspath;
 import com.github.jhejderup.data.callgraph.MethodHierarchy;
 import com.github.jhejderup.data.callgraph.ResolvedCall;
@@ -13,6 +14,8 @@ import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.util.config.AnalysisScopeReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -27,6 +30,9 @@ import static java.util.stream.Collectors.joining;
 
 public final class WalaCallgraphConstructor {
 
+
+    private static Logger logger = LoggerFactory.getLogger(WalaCallgraphConstructor.class);
+
     //A filter that accepts WALA objects that "belong" to the application loader.
     private static Predicate<CGNode> applicationLoaderFilter =
             node -> isApplication(node.getMethod().getDeclaringClass());
@@ -39,8 +45,11 @@ public final class WalaCallgraphConstructor {
                     .stream()
                     .map(c -> c.jarPath.toString()).collect(joining(":"));
 
-            classpath = analysisClasspath.project.jarPath.toString();
 
+
+
+
+            logger.info("Building call graph with classpath: {}", classpath);
             //1. Fetch exclusion file
             var classLoader = WalaCallgraphConstructor.class.getClassLoader();
             var exclusionFile = new File(classLoader.getResource("Java60RegressionExclusions.txt").getFile());

@@ -5,7 +5,7 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 /**
- * Unit test for simple App.
+ * Unit test for simple Uppdatera.
  */
 public class AppTest 
     extends TestCase
@@ -13,7 +13,7 @@ public class AppTest
     /**
      * Create the test case
      *
-     * @param testName name of the test case
+     * @param testName name artifact the test case
      */
     public AppTest( String testName )
     {
@@ -21,7 +21,7 @@ public class AppTest
     }
 
     /**
-     * @return the suite of tests being tested
+     * @return the suite artifact tests being tested
      */
     public static Test suite()
     {

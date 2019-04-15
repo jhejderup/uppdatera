@@ -1,20 +1,22 @@
 package com.github.jhejderup.data.type;
 
+import com.g00fy2.versioncompare.Version;
+
 import java.io.Serializable;
 import java.util.Objects;
 
 
-public class MavenCoordinate implements Serializable, Namespace {
+public class MavenCoordinate implements Serializable, Comparable<MavenCoordinate>, Namespace {
 
     public final String artifactId;
     public final String groupId;
-    public final String version;
+    public final Version version;
 
 
     public MavenCoordinate(String groupId, String artifactId, String version) {
         this.groupId = groupId;
         this.artifactId = artifactId;
-        this.version = version;
+        this.version = new Version(version);
 
     }
 
@@ -29,14 +31,14 @@ public class MavenCoordinate implements Serializable, Namespace {
         return String.join(this.getNamespaceDelim(),
                 this.groupId,
                 this.artifactId,
-                this.version);
+                this.version.getOriginalString());
     }
 
     @Override
     public String toString() {
         return "MavenCoordinate(" + this.groupId + ","
                 + this.artifactId + ","
-                + this.version + ")";
+                + this.version.getOriginalString() + ")";
     }
 
     @Override
@@ -65,11 +67,22 @@ public class MavenCoordinate implements Serializable, Namespace {
 
     @Override
     public String[] getSegments() {
-        return new String[]{this.groupId, this.artifactId, this.version};
+        return new String[]{this.groupId, this.artifactId, this.version.getOriginalString()};
     }
 
     @Override
     public String getNamespaceDelim() {
         return ":";
+    }
+
+    @Override
+    public int compareTo(MavenCoordinate o) {
+        final int BEFORE = -1;
+        final int EQUAL = 0;
+        final int AFTER = 1;
+
+        if(this.version.isEqual(o.version)) return EQUAL;
+        if(this.version.isHigherThan(o.version)) return AFTER;
+        return BEFORE;
     }
 }

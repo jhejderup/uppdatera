@@ -25,17 +25,17 @@ public final class ArtifactDiff implements Serializable, UniversalFunctionIdenti
 
     public final MavenCoordinate left;
     public final MavenCoordinate right;
-    public final List<JavaSourceDiff> diff;
+    public final List<JavaSourceDiff> editScript;
     public final List<MavenResolvedCoordinate> analyzedClasspath;
     public final Map<String, MavenResolvedCoordinate> classToCoordinate;
 
     public ArtifactDiff(MavenCoordinate left,
                         MavenCoordinate right,
-                        List<JavaSourceDiff> diff,
+                        List<JavaSourceDiff> editScript,
                         List<MavenResolvedCoordinate> analyzedClasspath) {
         this.left = left;
         this.right = right;
-        this.diff = diff;
+        this.editScript = editScript;
         this.analyzedClasspath = analyzedClasspath;
         this.classToCoordinate = createLookupTable();
     }
@@ -119,7 +119,7 @@ public final class ArtifactDiff implements Serializable, UniversalFunctionIdenti
     @Override
     public Map<UFI, CtExecutable> mappings() {
 
-        return this.diff.stream()
+        return this.editScript.stream()
                 .filter(s -> s.methodDiffs.isPresent())
                 .flatMap(s -> s.methodDiffs.get().keySet().stream())
                 .collect(toMap(s -> convertToUFI(s), Function.identity()));

@@ -8,11 +8,16 @@ import com.github.jhejderup.data.diff.FileDiff;
 import com.github.jhejderup.data.diff.JavaSourceDiff;
 import com.github.jhejderup.data.type.MavenCoordinate;
 import com.github.jhejderup.data.type.MavenResolvedCoordinate;
+import com.github.jhejderup.generator.WalaCallgraphConstructor;
 import gumtree.spoon.builder.SpoonGumTreeBuilder;
 import gumtree.spoon.diff.Diff;
 import gumtree.spoon.diff.operations.InsertOperation;
 import gumtree.spoon.diff.operations.Operation;
+import net.lingala.zip4j.core.ZipFile;
+import net.lingala.zip4j.exception.ZipException;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 import spoon.reflect.declaration.CtConstructor;
 import spoon.reflect.declaration.CtElement;
@@ -27,14 +32,15 @@ import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 
 public class Differ {
 
+
+    private static Logger logger = LoggerFactory.getLogger(Differ.class);
+
     public static ArtifactDiff artifact(MavenCoordinate coordLeft, MavenCoordinate coordRight)
-            throws IOException, TimeoutException, InterruptedException {
+            throws IOException, TimeoutException, InterruptedException, ZipException {
 
         //Add full analyzedClasspath for proper type resolution
         List<MavenResolvedCoordinate> classpath = MavenBuild
@@ -65,60 +71,26 @@ public class Differ {
     /// Download and unzip
     ///
     private static Path fetchAndExtractJARSource(MavenCoordinate coordinate)
-            throws IOException {
+            throws IOException, ZipException {
         File jarFile = Maven.resolver()
                 .resolve(coordinate.groupId
                         + ":"
                         + coordinate.artifactId
                         + ":java-source:sources:"
-                        + coordinate.version)
+                        + coordinate.version.getOriginalString())
                 .withoutTransitivity()
                 .asSingleFile();
         return unzip(jarFile);
     }
 
     private static Path unzip(final File zipFilePath)
-            throws IOException {
+            throws IOException, ZipException {
 
         Path unzipLocation = Files.createTempDirectory("uppdateratempz");
-
-        if (!(Files.exists(unzipLocation))) {
-            Files.createDirectories(unzipLocation);
-        }
-        try (ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(zipFilePath))) {
-            ZipEntry entry = zipInputStream.getNextEntry();
-            while (entry != null) {
-                Path filePath = Paths.get(unzipLocation.toString(), entry.getName());
-                if (!entry.isDirectory()) {
-                    unzipFiles(zipInputStream, filePath);
-                } else {
-                    Files.createDirectories(filePath);
-                }
-
-                zipInputStream.closeEntry();
-                entry = zipInputStream.getNextEntry();
-            }
-        }
-
+        ZipFile zipFile = new ZipFile(zipFilePath);
+        zipFile.extractAll(unzipLocation.toString());
         return unzipLocation;
     }
-
-
-    private static void unzipFiles(final ZipInputStream zipInputStream, final Path unzipFilePath)
-            throws IOException {
-
-        try (BufferedOutputStream bos = new BufferedOutputStream(
-                new FileOutputStream(unzipFilePath.toAbsolutePath().toString()))) {
-            byte[] bytesIn = new byte[1024];
-            int read = 0;
-            while ((read = zipInputStream.read(bytesIn)) != -1) {
-                bos.write(bytesIn, 0, read);
-            }
-        }
-
-    }
-
-
     ///
     /// File level diffing using git artifact
     ///
@@ -250,6 +222,8 @@ public class Differ {
         AstComperator diff = new AstComperator(srcClassPath);
         Optional<Path> srcFile = fileDiff.srcFile;
         Optional<Path> dstFile = fileDiff.dstFile;
+
+        logger.info("Compare File: {} -> {}", srcFile, dstFile);
 
         Diff edit = isFileRemoval(fileDiff) ?
                 diff.compare(diff.getCtType(srcFile.get().toFile()), null) :
