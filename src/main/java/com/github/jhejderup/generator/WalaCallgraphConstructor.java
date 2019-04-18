@@ -37,7 +37,6 @@ public final class WalaCallgraphConstructor {
 
         try {
             String classpath = coordinates.stream().map(c -> c.jarPath.toString()).collect(joining(":"));
-Run 
             //1. Fetch exclusion file
             ClassLoader classLoader = WalaCallgraphConstructor.class.getClassLoader();
             File exclusionFile = new File(classLoader.getResource("Java60RegressionExclusions.txt").getFile());
