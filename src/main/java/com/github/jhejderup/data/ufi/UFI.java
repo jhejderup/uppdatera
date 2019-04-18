@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public final class UFI implements Serializable {
-    public final static String DELIM = "::";
+    public final static String DELIM = "...";
     public final UniversalType pathType;
     public final String methodName;
     public final Optional<List<UniversalType>> parameters;
@@ -78,7 +78,7 @@ public final class UFI implements Serializable {
 
         return stringBuilder(this.pathType) + DELIM
                 + this.methodName
-                + "(" + args + ")"
+                + "<" + args + ">"
                 + stringBuilder(this.returnType);
     }
 
