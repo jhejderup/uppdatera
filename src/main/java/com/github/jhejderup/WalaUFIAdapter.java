@@ -14,7 +14,10 @@ import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.types.TypeName;
 import com.ibm.wala.types.TypeReference;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -97,6 +100,15 @@ public final class WalaUFIAdapter implements UniversalFunctionIdentifier<IMethod
         } else {
             return new UniversalType(Optional.empty(), new JavaPackage("unknown"));
         }
+    }
+
+    public void toFile(String path, String filename) throws IOException {
+        String content = WalaCallgraphConstructor.resolveCalls(this.callGraph.rawcg)
+                .stream()
+                .map(call -> String.format("\"%s\" -> \"%s\"",
+                        convertToUFI(call.source).toString(), convertToUFI(call.target).toString()))
+                .collect(Collectors.joining("\n"));
+        Files.write(Paths.get(path, filename), content.getBytes());
     }
 
     @Override
