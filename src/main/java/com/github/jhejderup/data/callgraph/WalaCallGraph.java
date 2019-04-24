@@ -15,9 +15,7 @@ import com.ibm.wala.types.TypeName;
 import com.ibm.wala.types.TypeReference;
 
 import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -27,17 +25,35 @@ import static java.util.stream.Collectors.toMap;
 
 public final class WalaCallGraph implements Serializable, UniversalFunctionIdentifier<IMethod> {
 
-    public final CallGraph callgraph;
+    public final CallGraph rawGraph;
     public final ModuleClasspath analyzedClasspath;
     public final Map<String, MavenResolvedCoordinate> jarToCoordinate;
+    private final Map<IMethod, List<IMethod>> reverseGraph;
 
-    public WalaCallGraph(CallGraph callgraph, ModuleClasspath analyzedClasspath) {
-        this.callgraph = callgraph;
+
+    public WalaCallGraph(CallGraph rawGraph, ModuleClasspath analyzedClasspath) {
+        this.rawGraph = rawGraph;
         this.analyzedClasspath = analyzedClasspath;
         this.jarToCoordinate = analyzedClasspath
                 .getCompleteClasspath()
                 .stream()
                 .collect(toMap(c -> c.jarPath.toString(), Function.identity()));
+        this.reverseGraph = WalaCallgraphConstructor
+                .resolveCalls(rawGraph)
+                .stream()
+                .collect(Collectors.toMap(call -> call.target,
+                        call -> {
+                            var lst = new ArrayList<IMethod>();
+                            lst.add(call.source);
+                            return lst;
+                        }, (oldLst, newLst) -> { oldLst.addAll(newLst); return oldLst; }));
+    }
+
+    public void walk(IMethod method) {
+        if (this.reverseGraph.containsKey(method)){
+            System.out.println(method);
+            this.reverseGraph.get(method).stream().forEach(this::walk);
+        }
     }
 
     private Optional<Namespace> getGlobalNamespace(IClass klass) {
@@ -68,7 +84,7 @@ public final class WalaCallGraph implements Serializable, UniversalFunctionIdent
         if (ty.isPrimitiveType()) {
             return new UniversalArrayType(Optional.of(JDKPackage.getInstance()), JavaPrimitive.of(tyref), countBrackets);
         } else if (ty.isClassType()) {
-            IClass klass = this.callgraph.getClassHierarchy().lookupClass(tyref);
+            IClass klass = this.rawGraph.getClassHierarchy().lookupClass(tyref);
             Namespace inner = klass != null ?
                     new JavaPackage(((klass.getName().toString()).substring(1)).substring(1).split("/")) :
                     new JavaPackage("_unknownType", tyref.getName().toString());
@@ -84,7 +100,7 @@ public final class WalaCallGraph implements Serializable, UniversalFunctionIdent
         if (tyref.isPrimitiveType()) {
             return new UniversalType(Optional.of(JDKPackage.getInstance()), JavaPrimitive.of(tyref));
         } else if (tyref.isClassType()) {
-            IClass klass = this.callgraph.getClassHierarchy().lookupClass(tyref);
+            IClass klass = this.rawGraph.getClassHierarchy().lookupClass(tyref);
             Namespace inner = klass != null ?
                     new JavaPackage((klass.getName().toString()).substring(1).split("/")) :
                     new JavaPackage("_unknownType", tyref.getName().toString());
@@ -121,7 +137,7 @@ public final class WalaCallGraph implements Serializable, UniversalFunctionIdent
     @Override
     public Map<UFI, IMethod> mappings() {
         return WalaCallgraphConstructor
-                .resolveCalls(this.callgraph)
+                .resolveCalls(this.rawGraph)
                 .stream()
                 .flatMap(call -> Stream.of(call.source, call.target))
                 .collect(toMap(c -> convertToUFI(c), Function.identity(), (v1, v2) -> v1));

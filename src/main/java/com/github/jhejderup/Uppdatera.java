@@ -7,7 +7,6 @@ import com.github.jhejderup.data.UpdatePair;
 import com.github.jhejderup.data.type.MavenCoordinate;
 import com.github.jhejderup.diff.Differ;
 import com.github.jhejderup.generator.WalaCallgraphConstructor;
-import com.ibm.wala.classLoader.IMethod;
 import net.lingala.zip4j.exception.ZipException;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -37,7 +36,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 
 public class Uppdatera {
@@ -183,11 +181,17 @@ public class Uppdatera {
                                                     .filter(m -> callgraph.mappings().containsKey(diff.convertToUFI(m)))
                                                     .forEach(k -> {
 
-                                                        System.out.println("In the callgraph, we make a call to " + diff.convertToUFI(k));
+                                                        System.out.println("In the rawGraph, we make a call to " + diff.convertToUFI(k));
 
                                                         var method = callgraph.mappings().get(diff.convertToUFI(k));
 
-                                                        var cgnodes = callgraph.callgraph.getNodes(method.getReference());
+                                                        var cgnodes = callgraph.rawGraph.getNodes(method.getReference());
+
+                                                        cgnodes.stream()
+                                                                .filter(n -> WalaCallgraphConstructor.isApplication(n.getMethod().getDeclaringClass()))
+                                                                .map(n -> n.getMethod())
+                                                                .peek(System.out::println)
+                                                                .forEach(m -> callgraph.walk(m));
 
                                                         System.out.println("which contains the following changes in the updated version");
                                                         edit.get(k).stream().forEach(System.out::println);

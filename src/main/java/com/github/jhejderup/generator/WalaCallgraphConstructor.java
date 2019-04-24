@@ -1,6 +1,7 @@
 package com.github.jhejderup.generator;
 
 import com.github.jhejderup.Uppdatera;
+import com.github.jhejderup.connectors.MavenBuild;
 import com.github.jhejderup.data.ModuleClasspath;
 import com.github.jhejderup.data.callgraph.MethodHierarchy;
 import com.github.jhejderup.data.callgraph.ResolvedCall;
@@ -14,16 +15,15 @@ import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.util.config.AnalysisScopeReader;
+import org.jboss.shrinkwrap.resolver.api.maven.MavenArtifactInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.joining;
@@ -102,6 +102,7 @@ public final class WalaCallgraphConstructor {
                 .collect(Collectors.toList());
         return calls;
     }
+
 
     public static List<MethodHierarchy> getAllMethods(ClassHierarchy cha) {
         Iterable<IClass> classes = () -> cha.getLoader(ClassLoaderReference.Application).iterateAllClasses();
@@ -203,7 +204,7 @@ public final class WalaCallgraphConstructor {
                 && !method.isAbstract();
     }
 
-    private static Boolean isApplication(IClass klass) {
+    public static Boolean isApplication(IClass klass) {
         return klass.getClassLoader().getReference().equals(ClassLoaderReference.Application);
     }
 
