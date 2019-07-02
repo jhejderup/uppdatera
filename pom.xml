@@ -58,7 +58,7 @@
           <!-- MainClass in mainfest make a executable jar -->
           <archive>
             <manifest>
-              <mainClass>com.github.jhejderup.GenerateMavenCG2</mainClass>
+              <mainClass>com.github.jhejderup.GenerateCallGraph</mainClass>
             </manifest>
           </archive>
         </configuration>
@@ -137,7 +137,7 @@
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit</artifactId>
-      <version>5.3.0.201903130848-r</version>
+      <version>5.3.1.201904271842-r</version>
     </dependency>
     <dependency>
       <groupId>com.g00fy2</groupId>
