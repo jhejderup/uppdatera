@@ -1,7 +1,5 @@
 package com.github.jhejderup.generator;
 
-import com.github.jhejderup.Uppdatera;
-import com.github.jhejderup.connectors.MavenBuild;
 import com.github.jhejderup.data.ModuleClasspath;
 import com.github.jhejderup.data.callgraph.MethodHierarchy;
 import com.github.jhejderup.data.callgraph.ResolvedCall;
@@ -15,15 +13,17 @@ import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.util.config.AnalysisScopeReader;
-import org.jboss.shrinkwrap.resolver.api.maven.MavenArtifactInfo;
+import com.ibm.wala.util.warnings.Warnings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.joining;
@@ -45,27 +45,40 @@ public final class WalaCallgraphConstructor {
                     .stream()
                     .map(c -> c.jarPath.toString()).collect(joining(":"));
 
-
-
-
-
             logger.info("Building call graph with classpath: {}", classpath);
             //1. Fetch exclusion file
             var classLoader = WalaCallgraphConstructor.class.getClassLoader();
             var exclusionFile = new File(classLoader.getResource("Java60RegressionExclusions.txt").getFile());
 
             //2. Set the analysis scope
-            var scope = AnalysisScopeReader.makeJavaBinaryAnalysisScope(classpath, exclusionFile);
+            var scope = AnalysisScopeReader.makePrimordialScope(exclusionFile);
+            AnalysisScopeReader.addClassPathToScope(
+                    analysisClasspath.getCompleteClasspath().get(0).jarPath.toString(),
+                    scope, scope.getLoader(AnalysisScope.APPLICATION));
+
+            if (analysisClasspath.dependencies.isPresent()) {
+                var depPath = analysisClasspath
+                        .dependencies
+                        .get()
+                        .stream()
+                        .map(c -> c.jarPath.toString()).collect(joining(":"));
+
+                AnalysisScopeReader.addClassPathToScope(depPath, scope, scope.getLoader(AnalysisScope.EXTENSION));
+            }
+
 
             //3. Class Hierarchy for name resolution -> missing superclasses are replaced by the ClassHierarchy root,
             //   i.e. java.lang.Object
             var cha = ClassHierarchyFactory.makeWithRoot(scope);
+            System.out.println(Warnings.asString());
+            Warnings.clear();
 
             //4. Specify Entrypoints -> all non-primordial public entrypoints (also with declared parameters, not sub-types)
             var entryPoints = getEntrypoints(cha);
 
             //5. Encapsulates various analysis options
             var options = new AnalysisOptions(scope, entryPoints);
+            options.setReflectionOptions(AnalysisOptions.ReflectionOptions.FULL);
             var cache = new AnalysisCacheImpl();
 
             //6 Build the call graph
