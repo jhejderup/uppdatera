@@ -45,7 +45,6 @@ public class GenerateCallGraph {
 
         var pomXML = readPaths[0];
         var appJAR = readPaths[1];
-
         logger.info("pom.xml located at {}", pomXML);
         logger.info("application jar located at {}", appJAR);
 
@@ -65,7 +64,7 @@ public class GenerateCallGraph {
 
 
 
-            var classpath = new ModuleClasspath(app, Optional.of(depz));
+            var classpath = new ModuleClasspath(app, Optional.empty());
 
 
 
