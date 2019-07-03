@@ -69,7 +69,7 @@ public final class WalaCallgraphConstructor {
 
             //3. Class Hierarchy for name resolution -> missing superclasses are replaced by the ClassHierarchy root,
             //   i.e. java.lang.Object
-            var cha = ClassHierarchyFactory.makeWithRoot(scope);
+            var cha = ClassHierarchyFactory.makeWithPhantom(scope);
             System.out.println(Warnings.asString());
             Warnings.clear();
 
