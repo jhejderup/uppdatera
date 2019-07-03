@@ -2,6 +2,9 @@ package com.github.jhejderup;
 
 import com.github.jhejderup.connectors.GradleBuild;
 import com.github.jhejderup.connectors.MavenBuild;
+import com.github.jhejderup.data.ModuleClasspath;
+import com.github.jhejderup.data.type.MavenCoordinate;
+import com.github.jhejderup.data.type.MavenResolvedCoordinate;
 import com.github.jhejderup.generator.WalaCallgraphConstructor;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.slf4j.Logger;
@@ -14,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,18 +51,27 @@ public class GenerateCallGraph {
 
         //2. Resolve dependencies of pom.xml files
         try {
-            var depz = Maven.resolver()
+            var depzFiles = Maven.resolver()
                     .loadPomFromFile(pomXML)
                     .importCompileAndRuntimeDependencies()
                     .resolve()
                     .withTransitivity().asFile();
 
+            var app = new MavenResolvedCoordinate("","","", Path.of(appJAR));
+
+            var depz = Arrays.stream(depzFiles).map(k -> k.toPath())
+                    .map(d -> new MavenResolvedCoordinate("","","",d))
+                    .collect(Collectors.toList());
 
 
-            var classpath = Stream.concat(Stream.of(appJAR),Arrays.stream(depz).map(f -> f.toString()))
-                    .collect(Collectors.joining(";"));
 
-            logger.info(classpath);
+            var classpath = new ModuleClasspath(app, Optional.of(depz));
+
+
+
+            var callgraph = WalaCallgraphConstructor.build(classpath);
+
+            callgraph.rawGraph.forEach(n -> logger.info(n.getMethod().getSignature()));
 
 
         } catch (Exception e) {
