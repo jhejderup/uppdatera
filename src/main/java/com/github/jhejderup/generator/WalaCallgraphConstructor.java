@@ -51,27 +51,13 @@ public final class WalaCallgraphConstructor {
             var exclusionFile = new File(classLoader.getResource("Java60RegressionExclusions.txt").getFile());
 
             //2. Set the analysis scope
-            var scope = AnalysisScopeReader.makePrimordialScope(exclusionFile);
-            AnalysisScopeReader.addClassPathToScope(
-                    analysisClasspath.getCompleteClasspath().get(0).jarPath.toString(),
-                    scope, scope.getLoader(AnalysisScope.APPLICATION));
-
-            if (analysisClasspath.dependencies.isPresent()) {
-                var depPath = analysisClasspath
-                        .dependencies
-                        .get()
-                        .stream()
-                        .map(c -> c.jarPath.toString()).collect(joining(":"));
-
-                AnalysisScopeReader.addClassPathToScope(depPath, scope, scope.getLoader(AnalysisScope.EXTENSION));
-            }
-
+            var scope = AnalysisScopeReader.makeJavaBinaryAnalysisScope(classpath, exclusionFile);
 
             //3. Class Hierarchy for name resolution -> missing superclasses are replaced by the ClassHierarchy root,
             //   i.e. java.lang.Object
-            var cha = ClassHierarchyFactory.makeWithPhantom(scope);
-            System.out.println(Warnings.asString());
-            Warnings.clear();
+            var cha = ClassHierarchyFactory.makeWithRoot(scope);
+//            System.out.println(Warnings.asString());
+//            Warnings.clear();
 
             //4. Specify Entrypoints -> all non-primordial public entrypoints (also with declared parameters, not sub-types)
             var entryPoints = getEntrypoints(cha);
