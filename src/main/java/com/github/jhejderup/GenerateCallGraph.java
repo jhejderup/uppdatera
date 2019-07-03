@@ -1,16 +1,12 @@
 package com.github.jhejderup;
 
-import com.github.jhejderup.connectors.GradleBuild;
-import com.github.jhejderup.connectors.MavenBuild;
 import com.github.jhejderup.data.ModuleClasspath;
-import com.github.jhejderup.data.type.MavenCoordinate;
 import com.github.jhejderup.data.type.MavenResolvedCoordinate;
 import com.github.jhejderup.generator.WalaCallgraphConstructor;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,9 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class GenerateCallGraph {
 
@@ -56,28 +50,40 @@ public class GenerateCallGraph {
                     .resolve()
                     .withTransitivity().asFile();
 
-            var app = new MavenResolvedCoordinate("","","", Path.of(appJAR));
+            var app = new MavenResolvedCoordinate("", "", "", Path.of(appJAR));
 
             var depz = Arrays.stream(depzFiles).map(k -> k.toPath())
-                    .map(d -> new MavenResolvedCoordinate("","","",d))
+                    .map(d -> new MavenResolvedCoordinate("", "", "", d))
                     .collect(Collectors.toList());
-
 
 
             var classpath = new ModuleClasspath(app, Optional.of(depz));
 
 
-
             var callgraph = WalaCallgraphConstructor.build(classpath);
 
+
+            var fileWriter = new FileWriter(Path.of(pomXML).getParent().toString() + "/uppdatera-calls.txt");
+
+
             callgraph.rawGraph.forEach(n -> {
-                if(WalaCallgraphConstructor.isPublicMethod(n.getMethod()))
-                    logger.info(n.getMethod().getSignature());
+                if (WalaCallgraphConstructor.isPublicMethod(n.getMethod())) {
+                    try {
+                        fileWriter.write(n.getMethod().getSignature());
+                        logger.info(n.getMethod().getSignature());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
             });
+
+            fileWriter.close();
 
 
         } catch (Exception e) {
-            logger.error("Failed for {} with exception: {}",pomXML, e);
+            logger.error("Failed for {} with exception: {}", pomXML, e);
+            e.printStackTrace();
         }
     }
 
