@@ -32,43 +32,13 @@ public class GenerateCallGraph {
 
     public static void main(String[] args) {
 
-        var tempRepository = Paths.get(args[0]);
+        var readPaths = args[0].split("\t");
 
+        var pomXML = readPaths[1];
+        var appJAR = readPaths[2];
 
-        var modules = isGradleProject(tempRepository) ? GradleBuild.resolveClasspath(tempRepository) :
-                MavenBuild.resolveClasspath(Path.of(tempRepository.toString(), "pom.xml"));
-
-
-        var callgraphMap = modules.stream()
-                .peek(m -> logger.info("Building call graph for {}", m.project))
-                .collect(Collectors.toMap(Function.identity(), WalaCallgraphConstructor::build));
-
-
-        callgraphMap.forEach((m, cg) -> {
-            try {
-                var fw = new FileWriter(m.project.jarPath.getParent() + "/functions.txt");
-
-                cg.rawGraph.forEach(n -> {
-                    try {
-                        fw.write(n.toString());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
-
-                fw.close();
-
-            } catch (IOException e) {
-                e.printStackTrace();
-
-            } finally {
-
-            }
-
-        });
-
-
-        logger.info("Callgraph construction for project modules done!");
+        logger.info("pom.xml located at {}", pomXML);
+        logger.info("application jar located at {}", appJAR);
 
 
     }
