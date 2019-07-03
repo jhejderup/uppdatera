@@ -46,18 +46,24 @@ public class GenerateCallGraph {
         logger.info("application jar located at {}", appJAR);
 
         //2. Resolve dependencies of pom.xml files
-        var files = Maven.resolver()
-                .loadPomFromFile(pomXML)
-                .importCompileAndRuntimeDependencies()
-                .resolve()
-                .withTransitivity().asFile();
-
-        Arrays.stream(files).map(file -> file.toString()).forEach(System.out::println);
-
+        try {
+            var depz = Maven.resolver()
+                    .loadPomFromFile(pomXML)
+                    .importCompileAndRuntimeDependencies()
+                    .resolve()
+                    .withTransitivity().asFile();
 
 
 
+            var classpath = Stream.concat(Stream.of(appJAR),Arrays.stream(depz).map(f -> f.toString()))
+                    .collect(Collectors.joining(";"));
 
+            logger.info(classpath);
+
+
+        } catch (Exception e) {
+            logger.error("Failed for {} with exception: {}",pomXML, e);
+        }
     }
 
 
