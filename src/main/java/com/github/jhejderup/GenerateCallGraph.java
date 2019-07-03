@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class GenerateCallGraph {
 
@@ -32,6 +33,7 @@ public class GenerateCallGraph {
 
     public static void main(String[] args) {
 
+        //0. Seperate input
         var readPaths = args[0].split(" ");
 
         var pomXML = readPaths[0];
@@ -39,6 +41,18 @@ public class GenerateCallGraph {
 
         logger.info("pom.xml located at {}", pomXML);
         logger.info("application jar located at {}", appJAR);
+
+        //2. Resolve dependencies of pom.xml files
+        var modules = MavenBuild.resolveClasspath(Path.of(pomXML));
+
+        modules.stream()
+                .flatMap(k -> k.getCompleteClasspath().stream())
+                .map(k -> k.jarPath.toString())
+                .forEach(System.out::println);
+
+
+
+
 
 
     }
