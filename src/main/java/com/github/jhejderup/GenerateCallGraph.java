@@ -32,10 +32,10 @@ public class GenerateCallGraph {
 
     public static void main(String[] args) {
 
+        var readPaths = args[0].split("  ");
 
-
-        var pomXML = args[0];
-        var appJAR = args[1];
+        var pomXML = readPaths[0];
+        var appJAR = readPaths[1];
 
         logger.info("pom.xml located at {}", pomXML);
         logger.info("application jar located at {}", appJAR);
