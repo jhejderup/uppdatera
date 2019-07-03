@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -63,17 +64,13 @@ public class GenerateCallGraph {
             var callgraph = WalaCallgraphConstructor.build(classpath);
 
 
-            var fileWriter = new FileWriter(Path.of(pomXML).getParent().toString() + "/uppdatera-calls.txt");
+            var fileWriter = new PrintWriter(Path.of(pomXML).getParent().toString() + "/uppdatera-calls.txt");
 
 
             callgraph.rawGraph.forEach(n -> {
                 if (WalaCallgraphConstructor.isUppdateraMethod(n.getMethod())) {
-                    try {
-                        fileWriter.write(n.getMethod().getSignature() + "\n");
+                        fileWriter.println(n.getMethod().getSignature());
                         logger.info(n.getMethod().getSignature());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
                 }
 
             });
