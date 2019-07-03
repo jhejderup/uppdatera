@@ -70,7 +70,10 @@ public class GenerateCallGraph {
 
             var callgraph = WalaCallgraphConstructor.build(classpath);
 
-            callgraph.rawGraph.forEach(n -> logger.info(n.getMethod().getSignature()));
+            callgraph.rawGraph.forEach(n -> {
+                if(WalaCallgraphConstructor.isPublicMethod(n.getMethod()))
+                    logger.info(n.getMethod().getSignature());
+            });
 
 
         } catch (Exception e) {
