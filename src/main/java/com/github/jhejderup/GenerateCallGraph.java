@@ -3,14 +3,17 @@ package com.github.jhejderup;
 import com.github.jhejderup.connectors.GradleBuild;
 import com.github.jhejderup.connectors.MavenBuild;
 import com.github.jhejderup.generator.WalaCallgraphConstructor;
+import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -43,13 +46,13 @@ public class GenerateCallGraph {
         logger.info("application jar located at {}", appJAR);
 
         //2. Resolve dependencies of pom.xml files
-        var modules = MavenBuild.resolveClasspath(Path.of(pomXML));
+        var files = Maven.resolver()
+                .loadPomFromFile(pomXML)
+                .importCompileAndRuntimeDependencies()
+                .resolve()
+                .withTransitivity().asFile();
 
-        modules.stream()
-                .flatMap(k -> k.getCompleteClasspath().stream())
-                .map(k -> k.jarPath.toString())
-                .forEach(System.out::println);
-
+        Arrays.stream(files).map(file -> file.toString()).forEach(System.out::println);
 
 
 
