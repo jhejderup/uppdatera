@@ -34,8 +34,8 @@ public class GenerateCallGraph {
 
         var readPaths = args[0].split("\t");
 
-        var pomXML = readPaths[1];
-        var appJAR = readPaths[2];
+        var pomXML = readPaths[0];
+        var appJAR = readPaths[1];
 
         logger.info("pom.xml located at {}", pomXML);
         logger.info("application jar located at {}", appJAR);
