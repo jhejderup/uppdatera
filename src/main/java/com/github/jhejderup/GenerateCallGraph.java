@@ -32,7 +32,7 @@ public class GenerateCallGraph {
 
     public static void main(String[] args) {
 
-        var readPaths = args[0].split("  ");
+        var readPaths = args[0].split(" ");
 
         var pomXML = readPaths[0];
         var appJAR = readPaths[1];
