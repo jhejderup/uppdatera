@@ -50,8 +50,17 @@ public final class WalaCallgraphConstructor {
             var classLoader = WalaCallgraphConstructor.class.getClassLoader();
             var exclusionFile = new File(classLoader.getResource("Java60RegressionExclusions.txt").getFile());
 
+            var appJAR =  analysisClasspath.project.jarPath.toString();
+
             //2. Set the analysis scope
-            var scope = AnalysisScopeReader.makeJavaBinaryAnalysisScope(classpath, exclusionFile);
+            var scope = AnalysisScopeReader.makeJavaBinaryAnalysisScope(appJAR, exclusionFile);
+
+             if(analysisClasspath.dependencies.isPresent()) {
+
+                 var depzJARpath = analysisClasspath.dependencies.get().stream()
+                         .map(c -> c.jarPath.toString()).collect(joining(":"));
+                 AnalysisScopeReader.addClassPathToScope(depzJARpath, scope, scope.getLoader(AnalysisScope.EXTENSION));
+             }
 
             //3. Class Hierarchy for name resolution -> missing superclasses are replaced by the ClassHierarchy root,
             //   i.e. java.lang.Object

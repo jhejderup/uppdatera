@@ -64,7 +64,7 @@ public class GenerateCallGraph {
 
 
 
-            var classpath = new ModuleClasspath(app, Optional.empty());
+            var classpath = new ModuleClasspath(app, Optional.of(depz));
 
 
 
