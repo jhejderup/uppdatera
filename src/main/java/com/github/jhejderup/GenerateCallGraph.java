@@ -67,7 +67,7 @@ public class GenerateCallGraph {
 
 
             callgraph.rawGraph.forEach(n -> {
-                if (WalaCallgraphConstructor.isPublicMethod(n.getMethod())) {
+                if (WalaCallgraphConstructor.isUppdateraMethod(n.getMethod())) {
                     try {
                         fileWriter.write(n.getMethod().getSignature());
                         logger.info(n.getMethod().getSignature());

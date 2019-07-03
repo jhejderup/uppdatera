@@ -206,7 +206,7 @@ public final class WalaCallgraphConstructor {
                 && klass.isPublic();
     }
 
-    public static boolean isPublicMethod(IMethod method) {
+    private static boolean isPublicMethod(IMethod method) {
         return isApplication(method.getDeclaringClass())
                 && method.isPublic()
                 && !method.isAbstract();
@@ -214,6 +214,16 @@ public final class WalaCallgraphConstructor {
 
     public static Boolean isApplication(IClass klass) {
         return klass.getClassLoader().getReference().equals(ClassLoaderReference.Application);
+    }
+
+    public static Boolean isExtension(IClass klass) {
+        return klass.getClassLoader().getReference().equals(ClassLoaderReference.Extension);
+    }
+
+    public static boolean isUppdateraMethod(IMethod method) {
+        return (isApplication(method.getDeclaringClass()) || isExtension(method.getDeclaringClass()))
+                && method.isPublic()
+                && !method.isAbstract();
     }
 
 }
