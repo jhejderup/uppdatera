@@ -197,7 +197,7 @@ public final class WalaCallgraphConstructor {
                 && klass.isPublic();
     }
 
-    private static boolean isPublicMethod(IMethod method) {
+    public static boolean isPublicMethod(IMethod method) {
         return isApplication(method.getDeclaringClass())
                 && method.isPublic()
                 && !method.isAbstract();
