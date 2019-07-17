@@ -32,8 +32,7 @@ public class GenerateCallGraph {
         
         
         var pomXML = args[0];
-        logger.info("pom.xml located at {}", pomXML);
-      
+        System.out.println(pomXML.replace("pom.xml","target/classes"));
         //2. Resolve dependencies of pom.xml files
         try {
             var depz = Maven.resolver()
