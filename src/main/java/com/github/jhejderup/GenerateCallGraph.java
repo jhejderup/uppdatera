@@ -51,9 +51,9 @@ public class GenerateCallGraph {
                 // copy each entry in the dest path
                 for (ZipEntry entry : entries) {
               
-                   System.out.println(entry);
+                   //System.out.println(entry);
 
-                    if (entry.isDirectory()) {
+                    if (!entry.isDirectory() && entry.getName().endsWith(".class") {
                          System.out.println(entry);
                     }
                  }
