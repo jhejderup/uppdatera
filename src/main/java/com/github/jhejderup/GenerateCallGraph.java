@@ -16,6 +16,12 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.io.IOException;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 public class GenerateCallGraph {
 
@@ -35,8 +41,26 @@ public class GenerateCallGraph {
                     .resolve()
                     .withTransitivity().asFile();
             
-            Arrays.stream(depz).forEach(System.out::println);
-            
+          
+            for(dep : depz) {
+                try (ZipFile archive = new ZipFile(archiveFile.toFile())) {
+                      // sort entries by name to always create folders first
+                List<? extends ZipEntry> entries = archive.stream()
+                                                      .sorted(Comparator.comparing(ZipEntry::getName))
+                                                      .collect(Collectors.toList());
+                // copy each entry in the dest path
+                for (ZipEntry entry : entries) {
+                    Path entryDest = destPath.resolve(entry.getName());
+
+                    System.out.println(entryDest);
+
+                    if (entry.isDirectory()) {
+                         System.out.println(entryDest);
+                    }
+                 }
+                }
+                  
+            }
 
         } catch (Exception e) {
             logger.error("Failed for {} with exception: {}", pomXML, e);
