@@ -54,7 +54,7 @@ public class GenerateCallGraph {
           
                     if (!entry.isDirectory() && entry.getName().endsWith(".class")) {
                          System.out.println(entry);
-                        var path = Paths.get(entry);    
+                        var path = Paths.get(entry.getName());    
                        var dir = path.getParent().toString();
                         System.out.println(dir);
                     }
