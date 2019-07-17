@@ -22,8 +22,12 @@ public class GenerateCallGraph {
     private static Logger logger = LoggerFactory.getLogger(GenerateCallGraph.class);
 
     public static void main(String[] args) {
+        
+        
+         logger.info("args value");
+        Arrays.stream(args).forEach(System.out::println);
 
-        //0. Seperate input
+     
         var pomXML = args[0];
         logger.info("pom.xml located at {}", pomXML);
       
