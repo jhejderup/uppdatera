@@ -41,9 +41,9 @@ public class GenerateCallGraph {
                     .resolve()
                     .withTransitivity().asFile();
             
-          
-            for(dep : depz) {
-                try (ZipFile archive = new ZipFile(archiveFile.toFile())) {
+            int i;
+            for (i = 0; i < depz.length; i++){
+                try (ZipFile archive = new ZipFile(depz[i])) {
                       // sort entries by name to always create folders first
                 List<? extends ZipEntry> entries = archive.stream()
                                                       .sorted(Comparator.comparing(ZipEntry::getName))
