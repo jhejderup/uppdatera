@@ -24,16 +24,12 @@ public class GenerateCallGraph {
     public static void main(String[] args) {
         
         
-         logger.info("args value");
-        Arrays.stream(args).forEach(System.out::println);
-
-     
         var pomXML = args[0];
         logger.info("pom.xml located at {}", pomXML);
       
         //2. Resolve dependencies of pom.xml files
         try {
-            var depzFiles = Maven.resolver()
+            var depz = Maven.resolver()
                     .loadPomFromFile(pomXML)
                     .importCompileAndRuntimeDependencies()
                     .resolve()
