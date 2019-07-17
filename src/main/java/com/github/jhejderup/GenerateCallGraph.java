@@ -62,10 +62,10 @@ public class GenerateCallGraph {
                   
             }
             
-            System.out.println(";excl=" + String.join(",", packages) + "\"");
+            System.out.println("String.join(",", packages) + "\"");
 
         } catch (Exception e) {
-            System.out.println(";excl=" + "NULLLL"+ "\"");
+            System.out.println("NULL");
 //             logger.error("Failed for {} with exception: {}", pomXML, e);
 //             e.printStackTrace();
         }
