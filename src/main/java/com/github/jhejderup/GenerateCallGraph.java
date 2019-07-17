@@ -53,7 +53,7 @@ public class GenerateCallGraph {
               
                    //System.out.println(entry);
 
-                    if (!entry.isDirectory() && entry.getName().endsWith(".class") {
+                    if (!entry.isDirectory() && entry.getName().endsWith(".class")) {
                          System.out.println(entry);
                     }
                  }
