@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.HashSet;
 
 public class GenerateCallGraph {
 
@@ -41,6 +42,7 @@ public class GenerateCallGraph {
                     .resolve()
                     .withTransitivity().asFile();
             
+            var packages = new HashSet<String>(); 
             int i;
             for (i = 0; i < depz.length; i++){
                 try (ZipFile archive = new ZipFile(depz[i])) {
@@ -50,18 +52,17 @@ public class GenerateCallGraph {
                                                       .collect(Collectors.toList());
                 // copy each entry in the dest path
                 for (ZipEntry entry : entries) {
-              
-          
                     if (!entry.isDirectory() && entry.getName().endsWith(".class")) {
-                         System.out.println(entry);
                         var path = Paths.get(entry.getName());    
-                       var dir = path.getParent().toString();
-                        System.out.println(dir);
+                        var dir = path.getParent().toString();
+                        packages.add(dir.replace("/","."));
                     }
                  }
                 }
                   
             }
+            
+            System.out.println(";excl=" + String.join(",", packages) + "\"");
 
         } catch (Exception e) {
             logger.error("Failed for {} with exception: {}", pomXML, e);
