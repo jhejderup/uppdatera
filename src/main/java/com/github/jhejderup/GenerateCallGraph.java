@@ -58,6 +58,7 @@ public class GenerateCallGraph {
                         packages.add(dir.replace("/","."));        
                     }
                 }
+                }
                   
             }
             
