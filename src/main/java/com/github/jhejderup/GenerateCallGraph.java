@@ -56,7 +56,7 @@ public class GenerateCallGraph {
                         var path = Paths.get(entry.getName());    
                         var dir = path.getParent().toString();
                         var size = dir.split("/");
-                        if(size > 2){
+                        if(size.length > 2){
                             packages.add(size[0] + "." +size[1] + "."+ size[2] + ".*");
                         } else {
                           packages.add(size[0] + "." +size[1] + ".*");
