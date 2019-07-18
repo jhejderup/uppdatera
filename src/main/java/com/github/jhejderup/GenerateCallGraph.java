@@ -31,9 +31,9 @@ public class GenerateCallGraph {
     public static void main(String[] args) {
         
         
-        var pomXML = args[0];
-        System.out.println(pomXML.replace("pom.xml","target/classes"));
-        System.out.println("");
+        var pomXML = args[0].replace("target/classes","pom.xml");
+      //  System.out.println(pomXML.replace("pom.xml","target/classes"));
+      //  System.out.println("");
         //2. Resolve dependencies of pom.xml files
         try {
             var depz = Maven.resolver()
@@ -65,7 +65,7 @@ public class GenerateCallGraph {
             System.out.println(String.join(",", packages) + "\"");
 
         } catch (Exception e) {
-            System.out.println("NULL");
+            System.out.println("\"");
 //             logger.error("Failed for {} with exception: {}", pomXML, e);
 //             e.printStackTrace();
         }
