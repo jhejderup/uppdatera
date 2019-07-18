@@ -31,7 +31,7 @@ public class GenerateCallGraph {
     public static void main(String[] args) {
         
         
-        var pomXML = args[0].replace("target/classes","pom.xml");
+        var pomXML = args[0];
       //  System.out.println(pomXML.replace("pom.xml","target/classes"));
       //  System.out.println("");
         //2. Resolve dependencies of pom.xml files
@@ -55,14 +55,20 @@ public class GenerateCallGraph {
                     if (!entry.isDirectory() && entry.getName().endsWith(".class")) {
                         var path = Paths.get(entry.getName());    
                         var dir = path.getParent().toString();
-                        packages.add(dir.replace("/","."));
+                        var size = dir.split("/");
+                        if(size > 2){
+                            packages.add(size[0] + "." +size[1] + "."+ size[2] + ".*");
+                        } else {
+                          packages.add(size[0] + "." +size[1] + ".*");
+                        }
+                        
                     }
                  }
                 }
                   
             }
             
-            System.out.print(","+ String.join(",", packages) + ";excl=org.junit.*,org.apache.maven.plugins.*\"");
+            System.out.print(","+ String.join(",", packages) + ";excl=org.junit.*,org.apache.maven.plugins.*");
 
         } catch (Exception e) {
             System.out.print(";excl=org.junit.*,org.apache.maven.plugins.*\"");
