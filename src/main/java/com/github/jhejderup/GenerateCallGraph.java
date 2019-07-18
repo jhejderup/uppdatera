@@ -55,9 +55,15 @@ public class GenerateCallGraph {
                     if (!entry.isDirectory() && entry.getName().endsWith(".class")) {
                         var path = Paths.get(entry.getName());    
                         var dir = path.getParent().toString();
-                        packages.add(dir.replace("/","."));        
+                        var size = dir.split("/");
+                        if(size.length > 2){
+                            packages.add(size[0] + "." +size[1] + "."+ size[2] + ".*");
+                        } else {
+                          packages.add(size[0] + "." +size[1] + ".*");
+                        }
+                        
                     }
-                }
+                 }
                 }
                   
             }
@@ -65,7 +71,7 @@ public class GenerateCallGraph {
             System.out.print(","+ String.join(",", packages));
 
         } catch (Exception e) {
-         //   System.out.print("");
+            System.out.print("");
 //             logger.error("Failed for {} with exception: {}", pomXML, e);
 //             e.printStackTrace();
         }
