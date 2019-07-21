@@ -73,7 +73,7 @@ public class GenerateCallGraph {
         } catch (Exception e) {
             System.out.print("");
 //             logger.error("Failed for {} with exception: {}", pomXML, e);
-//             e.printStackTrace();
+             e.printStackTrace();
         }
     }
 
