@@ -68,7 +68,7 @@ public class GenerateCallGraph {
                   
             }
             
-            System.out.print(","+ String.join(",", packages));
+            System.out.print(String.join(",", packages));
 
         } catch (Exception e) {
             System.out.print("");
