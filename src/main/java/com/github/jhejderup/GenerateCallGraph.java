@@ -57,7 +57,7 @@ public class GenerateCallGraph {
                         var size = dir.split("/");
                         if(size.length > 2){
                             packages.add(size[0] + "." +size[1] + "."+ size[2] + ".*");
-                        } elseif (size.length > 1) {
+                        } else if (size.length > 1) {
                           packages.add(size[0] + "." +size[1] + ".*");
                         } else {
                          packages.add(size[0] + ".*");    
