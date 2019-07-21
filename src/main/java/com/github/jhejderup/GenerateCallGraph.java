@@ -30,7 +30,6 @@ public class GenerateCallGraph {
 
     public static void main(String[] args) {
         
-        Arrays.stream(args).forEach(System.out::println);
         var pomXML = args[0];
       //  System.out.println(pomXML.replace("pom.xml","target/classes"));
       //  System.out.println("");
@@ -58,8 +57,10 @@ public class GenerateCallGraph {
                         var size = dir.split("/");
                         if(size.length > 2){
                             packages.add(size[0] + "." +size[1] + "."+ size[2] + ".*");
-                        } else {
+                        } elseif (size.length > 1) {
                           packages.add(size[0] + "." +size[1] + ".*");
+                        } else {
+                         packages.add(size[0] + ".*");    
                         }
                         
                     }
