@@ -30,7 +30,7 @@ public class GenerateCallGraph {
 
     public static void main(String[] args) {
         
-        
+        Arrays.stream(args).forEach(System.out::println);
         var pomXML = args[0];
       //  System.out.println(pomXML.replace("pom.xml","target/classes"));
       //  System.out.println("");
