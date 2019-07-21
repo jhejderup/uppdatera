@@ -51,6 +51,7 @@ public class GenerateCallGraph {
                                                       .collect(Collectors.toList());
                 // copy each entry in the dest path
                 for (ZipEntry entry : entries) {
+                    try {
                     if (!entry.isDirectory() && entry.getName().endsWith(".class")) {
                         var path = Paths.get(entry.getName());    
                         var dir = path.getParent().toString();
@@ -64,6 +65,9 @@ public class GenerateCallGraph {
                         }
                         
                     }
+                        } catch(Exception e) {
+                            continue;
+                        }
                  }
                 }
                   
