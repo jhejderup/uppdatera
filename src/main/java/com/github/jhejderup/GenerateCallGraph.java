@@ -47,7 +47,6 @@ public class GenerateCallGraph {
         try {
             var depzFiles = Maven.resolver()
                     .loadPomFromFile(pomXML)
-                    .importCompileAndRuntimeDependencies()
                     .resolve()
                     .withTransitivity().asFile();
 
