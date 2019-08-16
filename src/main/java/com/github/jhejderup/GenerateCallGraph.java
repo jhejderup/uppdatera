@@ -31,17 +31,21 @@ public class GenerateCallGraph {
     public static void main(String[] args) {
         
         var pomXML = args[0];
-      //  System.out.println(pomXML.replace("pom.xml","target/classes"));
-      //  System.out.println("");
-        //2. Resolve dependencies of pom.xml files
         try {
             var depz = Maven.resolver()
                     .loadPomFromFile(pomXML)
-                    .importCompileAndRuntimeDependencies()
-                    .resolve()
-                    .withTransitivity().asFile();
+                    .importDependencies(
+                        ScopeType.TEST,
+                        ScopeType.SYSTEM,
+                        ScopeType.COMPILE,
+                        ScopeType.IMPORT,
+                        ScopeType.RUNTIME,
+                        ScopeType.PROVIDED
+                ).resolve()
+                 .withTransitivity()
+                 .asFile();
             
-            var packages = new HashSet<String>(); 
+            var packages = new HashSet<String>();
             int i;
             for (i = 0; i < depz.length; i++){
                 try (ZipFile archive = new ZipFile(depz[i])) {
