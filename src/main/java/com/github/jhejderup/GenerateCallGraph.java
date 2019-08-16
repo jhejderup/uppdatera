@@ -4,6 +4,7 @@ import com.github.jhejderup.data.ModuleClasspath;
 import com.github.jhejderup.data.type.MavenResolvedCoordinate;
 import com.github.jhejderup.generator.WalaCallgraphConstructor;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
+import org.jboss.shrinkwrap.resolver.api.maven.ScopeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
