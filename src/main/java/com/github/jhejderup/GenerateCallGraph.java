@@ -36,11 +36,8 @@ public class GenerateCallGraph {
             var depz = Maven.resolver()
                     .loadPomFromFile(pomXML)
                     .importDependencies(
-                        ScopeType.TEST,
-                        ScopeType.SYSTEM,
                         ScopeType.COMPILE,
                         ScopeType.IMPORT,
-                        ScopeType.RUNTIME,
                         ScopeType.PROVIDED
                 ).resolve()
                  .withTransitivity()
