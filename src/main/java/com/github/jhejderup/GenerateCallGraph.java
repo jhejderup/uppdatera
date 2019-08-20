@@ -34,6 +34,7 @@ public class GenerateCallGraph {
         var pomXML = args[0];
         try {
             var depz = Maven.resolver()
+                    .workOffline()
                     .loadPomFromFile(pomXML)
                     .importDependencies(
                         ScopeType.COMPILE,
