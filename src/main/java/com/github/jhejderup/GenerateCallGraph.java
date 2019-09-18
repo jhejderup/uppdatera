@@ -7,8 +7,6 @@ import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,9 +66,9 @@ public class GenerateCallGraph {
 
 
             callgraph.rawGraph.forEach(n -> {
-                if (WalaCallgraphConstructor.isUppdateraMethod(n.getMethod())) {
-                        fileWriter.println(n.getMethod().getSignature());
-                        logger.info(n.getMethod().getSignature());
+                if (WalaCallgraphConstructor.isUppdateraScope(n.getMethod())) {
+                    fileWriter.println(n.getMethod().getSignature());
+                    logger.info(n.getMethod().getSignature());
                 }
 
             });

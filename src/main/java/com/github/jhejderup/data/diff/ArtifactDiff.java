@@ -47,7 +47,7 @@ public final class ArtifactDiff implements Serializable, UniversalFunctionIdenti
                 .map(MavenResolvedCoordinate::getClasses)
                 .flatMap(m -> m.entrySet().stream())
                 .distinct()
-                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1));
     }
 
     private UniversalType resolveSpoonType(CtTypeReference type) {

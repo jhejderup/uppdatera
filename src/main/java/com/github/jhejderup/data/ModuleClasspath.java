@@ -15,7 +15,7 @@ public final class ModuleClasspath implements Serializable {
     public final MavenResolvedCoordinate project;
     public final Optional<List<MavenResolvedCoordinate>> dependencies;
 
-    public ModuleClasspath(MavenResolvedCoordinate project, Optional<List<MavenResolvedCoordinate>>  dependencies) {
+    public ModuleClasspath(MavenResolvedCoordinate project, Optional<List<MavenResolvedCoordinate>> dependencies) {
         this.project = project;
         this.dependencies = dependencies;
     }

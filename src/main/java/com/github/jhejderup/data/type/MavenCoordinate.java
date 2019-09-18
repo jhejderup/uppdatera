@@ -81,8 +81,8 @@ public class MavenCoordinate implements Serializable, Comparable<MavenCoordinate
         final int EQUAL = 0;
         final int AFTER = 1;
 
-        if(this.version.isEqual(o.version)) return EQUAL;
-        if(this.version.isHigherThan(o.version)) return AFTER;
+        if (this.version.isEqual(o.version)) return EQUAL;
+        if (this.version.isHigherThan(o.version)) return AFTER;
         return BEFORE;
     }
 }

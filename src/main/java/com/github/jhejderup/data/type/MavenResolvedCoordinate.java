@@ -32,9 +32,11 @@ public final class MavenResolvedCoordinate extends MavenCoordinate implements Se
     }
 
 
-
     public static MavenResolvedCoordinate of(IdeaSingleEntryLibraryDependency d) {
         GradleModuleVersion mod = d.getGradleModuleVersion();
+        if (mod == null)
+            return null;
+
         return new MavenResolvedCoordinate(
                 mod.getGroup(),
                 mod.getName(),

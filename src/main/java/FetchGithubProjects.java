@@ -1,28 +1,15 @@
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.kohsuke.github.GHContent;
-import org.kohsuke.github.GHRepository;
-import org.kohsuke.github.GitHub;
+import org.kohsuke.github.*;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class FetchGithubProjects {
 
-   private static final String CODECOV  = "https://codecov.io/gh/";
-   private static final String COVERALLS = "https://coveralls.io/";
+    private static final String CODECOV = "https://codecov.io/gh/";
+    private static final String COVERALLS = "https://coveralls.io/";
     private static final String CODECLIMATE = "https://codeclimate.com/github/";
-
 
 
     public static boolean hasTravisCI(GHRepository repo) {
@@ -38,9 +25,9 @@ public class FetchGithubProjects {
         try {
             var content = repo.getFileContent("README.md");
             var reader = new BufferedReader(new InputStreamReader(content.read()));
-            while(reader.ready()) {
+            while (reader.ready()) {
                 String line = reader.readLine();
-                if(line.contains(CODECOV) || line.contains(COVERALLS) || line.contains(CODECLIMATE))
+                if (line.contains(CODECOV) || line.contains(COVERALLS) || line.contains(CODECLIMATE))
                     return true;
             }
             return false;
@@ -49,12 +36,48 @@ public class FetchGithubProjects {
         }
     }
 
+    public static void printIterableInfo(final PagedSearchIterable<GHRepository> iterable) {
+        int totalNumberOfFoundRepositories = iterable.getTotalCount();
+        System.out.printf("%s repositories has been found\n", totalNumberOfFoundRepositories);
+        if (iterable.isIncomplete()) {
+            System.out.println("Results are incomplete, there might be others repositories");
+        } else {
+            System.out.println("These are all the repositories that match the requirements");
+        }
+
+        if (totalNumberOfFoundRepositories > 1000) {
+            System.out.printf(
+                    "Only first %s repositories out of %s can be retrieved!" +
+                            " Repositories will be sorted by stars in descending order.\n\n",
+                    1000,
+                    totalNumberOfFoundRepositories
+            );
+        }
+    }
 
 
     public static void main(String[] args) throws IOException {
         var github = GitHub.connect();
 
         System.out.println(github.getRateLimit());
+
+
+        var repos = github
+                .searchRepositories()
+                .language("java")
+                .stars("25..29")
+                .sort(GHRepositorySearchBuilder.Sort.STARS)
+                .order(GHDirection.DESC)
+                .list()
+                .withPageSize(100);
+
+
+        printIterableInfo(repos);
+
+
+        StreamSupport
+                .stream(repos.spliterator(), true)
+                .forEach(repo -> System.out.println(String.format("%s.git", repo.getHtmlUrl().toString())));
 
 
 //        var path = Paths.get("/Users/jhejderup/crap2.txt");
@@ -93,54 +116,50 @@ public class FetchGithubProjects {
 //                .forEach(System.out::println);
 
 
-
 //        var files = github.getRepository("gwtbootstrap3/gwtbootstrap3")
 //                .getCompare("a04344eda3f16bcd70d822b03c2dfdf4e639848e","a96eb983b06ca5e271b5393b8710c46c6f105dc0")
 //                .getFiles();
 
 
+//        repos.forEach(repo -> System.out.println(String.format("%s.git", repo.getHtmlUrl().toString())));
 
 
-        var repos = github
-                .searchRepositories()
-                .language("java")
-                .stars("100..500")
-                .list();
+//        repos.withPageSize(20000).
+//                .forEach(repo -> System.out.println(String.format("%s.git", repo.getHtmlUrl().toString())));
+
+//        repos.asList()
+//                .stream()
+//                .forEach(repo -> System.out.println(String.format("%s.git", repo.getHtmlUrl().toString())));
 
 
-        var repositories = StreamSupport
-                .stream(repos.spliterator(), false);
-
-
-        repositories
-                .filter(repo -> Objects.equals(repo.getLanguage(), "Java"))
-                .filter(FetchGithubProjects::hasTravisCI)
-                .filter(FetchGithubProjects::hasCodeCoverageService)
-                .forEach(repo -> System.out.println(String.format("%s.git", repo.getHtmlUrl().toString())));
-
-
+//        StreamSupport
+//                .stream(repos.spliterator(), true)
+//                .forEach(repo -> System.out.println(String.format("%s.git", repo.getHtmlUrl().toString())));
+//
+//
 //        repositories
 //                .filter(repo -> Objects.equals(repo.getLanguage(), "Java"))
 //                .filter(FetchGithubProjects::hasTravisCI)
-//                .forEach(repo -> {
+//                .filter(FetchGithubProjects::hasCodeCoverageService)
+//                .forEach(repo -> System.out.println(String.format("%s.git", repo.getHtmlUrl().toString())));
 //
 //
-//                    try {
-//                        var f = new File(String.format("/Users/jhejderup/Studies/uppdatera/%s", repo.getFullName()));
-//                        Git.cloneRepository().setURI(String.format("%s.git", repo.getHtmlUrl().toString()))
-//                                .setDirectory(f)
-//                                .call();
-//                        System.out.println(String.format("%s.git", repo.getHtmlUrl().toString()));
-//                    } catch (GitAPIException e) {
-//                        e.printStackTrace();
-//                    }
-//                });
-
-
-
-
-
-
+////        repositories
+////                .filter(repo -> Objects.equals(repo.getLanguage(), "Java"))
+////                .filter(FetchGithubProjects::hasTravisCI)
+////                .forEach(repo -> {
+////
+////
+////                    try {
+////                        var f = new File(String.format("/Users/jhejderup/Studies/uppdatera/%s", repo.getFullName()));
+////                        Git.cloneRepository().setURI(String.format("%s.git", repo.getHtmlUrl().toString()))
+////                                .setDirectory(f)
+////                                .call();
+////                        System.out.println(String.format("%s.git", repo.getHtmlUrl().toString()));
+////                    } catch (GitAPIException e) {
+////                        e.printStackTrace();
+////                    }
+////                });
 
 
     }

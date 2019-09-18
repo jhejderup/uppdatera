@@ -8,7 +8,6 @@ import com.github.jhejderup.data.diff.FileDiff;
 import com.github.jhejderup.data.diff.JavaSourceDiff;
 import com.github.jhejderup.data.type.MavenCoordinate;
 import com.github.jhejderup.data.type.MavenResolvedCoordinate;
-import com.github.jhejderup.generator.WalaCallgraphConstructor;
 import gumtree.spoon.builder.SpoonGumTreeBuilder;
 import gumtree.spoon.diff.Diff;
 import gumtree.spoon.diff.operations.InsertOperation;
@@ -24,7 +23,8 @@ import spoon.reflect.declaration.CtElement;
 import spoon.reflect.declaration.CtExecutable;
 import spoon.reflect.declaration.CtMethod;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -91,6 +91,7 @@ public class Differ {
         zipFile.extractAll(unzipLocation.toString());
         return unzipLocation;
     }
+
     ///
     /// File level diffing using git artifact
     ///

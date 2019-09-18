@@ -15,7 +15,10 @@ import com.ibm.wala.types.TypeName;
 import com.ibm.wala.types.TypeReference;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -46,11 +49,14 @@ public final class WalaCallGraph implements Serializable, UniversalFunctionIdent
                             var lst = new ArrayList<IMethod>();
                             lst.add(call.source);
                             return lst;
-                        }, (oldLst, newLst) -> { oldLst.addAll(newLst); return oldLst; }));
+                        }, (oldLst, newLst) -> {
+                            oldLst.addAll(newLst);
+                            return oldLst;
+                        }));
     }
 
     public void walk(IMethod method) {
-        if (this.reverseGraph.containsKey(method)){
+        if (this.reverseGraph.containsKey(method)) {
             System.out.println(method);
             this.reverseGraph.get(method).stream().forEach(this::walk);
         }

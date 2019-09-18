@@ -14,7 +14,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+
 import static java.util.stream.Collectors.toList;
 
 public class GradleBuild {
@@ -67,15 +69,23 @@ public class GradleBuild {
         if (file.isPresent()) {
             var resolvedDependencies = module.getDependencies()
                     .stream()
-                    .map(IdeaSingleEntryLibraryDependency.class::cast)
+                    .map(k -> {
+                        try {
+                            return (IdeaSingleEntryLibraryDependency) k;
+                        } catch (Exception e) {
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
                     .filter(d -> !d.getScope().toString().contains("TEST"))
                     .map(MavenResolvedCoordinate::of)
+                    .filter(Objects::nonNull)
                     .collect(toList());
 
             var project = new MavenResolvedCoordinate("com.github", module.getName(), "SNAPSHOT",
                     Paths.get(file.get().toURI()));
 
-            return Optional.of(new ModuleClasspath(project,Optional.of(resolvedDependencies)));
+            return Optional.of(new ModuleClasspath(project, Optional.of(resolvedDependencies)));
 
         } else {
             return Optional.empty();

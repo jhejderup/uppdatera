@@ -5,7 +5,6 @@ import com.github.jhejderup.data.type.MavenCoordinate;
 import com.github.jhejderup.data.type.MavenResolvedCoordinate;
 import com.ibm.wala.properties.WalaProperties;
 import com.ibm.wala.util.WalaException;
-import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jboss.shrinkwrap.resolver.api.maven.MavenArtifactInfo;
 import org.jboss.shrinkwrap.resolver.api.maven.MavenResolvedArtifact;
@@ -61,7 +60,7 @@ public class MavenBuild {
 
     }
 
-    private static ModuleClasspath of(BuiltProject module){
+    private static ModuleClasspath of(BuiltProject module) {
 
         var artifactName = module.getDefaultBuiltArchive().getName();
 
@@ -101,12 +100,14 @@ public class MavenBuild {
                 .forProject(project.toFile())
                 .setJavaHome(WALA_COMPATIBLE_JDK)
                 .useDefaultDistribution()
-                .setGoals("package")
+                .setGoals("install  -Dgpg.skip=true") //test -> jar:test-jar
                 .build();
 
-        return buildProject
-                .getModules()
-                .stream()
+
+        return Stream.concat(
+                Stream.of(buildProject),
+                buildProject.getModules().stream())
+                .filter(m -> m.getModel().getPackaging().equals("jar"))
                 .map(MavenBuild::of)
                 .collect(Collectors.toList());
     }
