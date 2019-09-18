@@ -104,7 +104,7 @@ public class RechabilityAnalysis {
             var cg = WalaCallgraphConstructor.build(classpath);
 
             //Resolve function calls
-            var resolvedCalls = WalaCallgraphConstructor.resolveCalls(cg.rawGraph);
+            var resolvedCalls = WalaCallgraphConstructor.makeCHA(cg.rawGraph);
 
             Function<IMethod, UppdateraMethod> toUppdatera =
                     m -> new UppdateraMethod(toUppdateraFunctionString(m), getClassLoader(m));

@@ -35,9 +35,13 @@ public final class WalaCallgraphConstructor {
     private static Predicate<CGNode> applicationLoaderFilter =
             node -> isApplication(node.getMethod().getDeclaringClass());
 
+    private static Predicate<CGNode> extensionLoaderFilter =
+            node -> isExtension(node.getMethod().getDeclaringClass());
+
 
     private static Predicate<CGNode> uppdateraLoaderFilter =
-            node -> isApplication(node.getMethod().getDeclaringClass()) || isExtension(node.getMethod().getDeclaringClass());
+            node -> applicationLoaderFilter.test(node) ||
+                    extensionLoaderFilter.test(node);
 
     public static WalaCallGraph build(ModuleClasspath analysisClasspath) {
 
@@ -66,9 +70,9 @@ public final class WalaCallgraphConstructor {
 
             //3. Class Hierarchy for name resolution -> missing superclasses are replaced by the ClassHierarchy root,
             //   i.e. java.lang.Object
-            var cha = ClassHierarchyFactory.makeWithPhantom(scope);
+            var cha = ClassHierarchyFactory.makeWithRoot(scope);
 
-            //4. Specify Entrypoints -> all non-primordial public entrypoints (also with declared parameters, not sub-types)
+            //4. Both Private/Public functions are entry-points
             var entryPoints = makeEntryPoints(cha);
 
             //5. Encapsulates various analysis options
@@ -85,7 +89,7 @@ public final class WalaCallgraphConstructor {
         }
     }
 
-    public static List<ResolvedCall> resolveCalls(CallGraph cg) {
+    public static List<ResolvedCall> makeCHA(CallGraph cg) {
         Iterable<CGNode> cgNodes = () -> cg.iterator();
         var calls = StreamSupport
                 .stream(cgNodes.spliterator(), false)
@@ -93,7 +97,7 @@ public final class WalaCallgraphConstructor {
                 .flatMap(node -> {
                     Iterable<CallSiteReference> callSites = () -> node.iterateCallSites();
                     return StreamSupport
-                            .stream(callSites.spliterator(), false)
+                            .stream(callSites.spliterator(), true)
                             .flatMap(site -> {
                                 MethodReference ref = site.getDeclaredTarget();
                                 if(site.isDispatch()){
@@ -107,7 +111,7 @@ public final class WalaCallgraphConstructor {
                                 } else {
                                     IMethod target = cg.getClassHierarchy().resolveMethod(ref);
                                     if(target != null){
-                                    return Stream.of(new ResolvedCall(
+                                        return Stream.of(new ResolvedCall(
                                             node.getMethod(),
                                             site.getInvocationCode(),
                                             target));
@@ -123,9 +127,6 @@ public final class WalaCallgraphConstructor {
         return calls;
     }
 
-    ///
-    /// Fetch JAR File
-    ///
     public static String fetchJarFile(IClass klass) {
         var shrikeKlass = (ShrikeClass) klass;
         var moduleEntry = (JarFileEntry) shrikeKlass.getModuleEntry();
@@ -139,21 +140,17 @@ public final class WalaCallgraphConstructor {
         var entryPoints = StreamSupport.stream(classes.spliterator(), false)
                 .filter(WalaCallgraphConstructor::skipInterface)
                 .flatMap(klass -> klass.getAllMethods().parallelStream())
-                .filter(WalaCallgraphConstructor::skipAbstractMethods)
+                .filter(WalaCallgraphConstructor::skipAbstractMethod)
                 .map(m -> new DefaultEntrypoint(m, cha))
                 .collect(Collectors.toList());
         return new ArrayList<>(entryPoints);
     }
 
-    ///
-    /// Helper functions
-    ///
     private static boolean skipInterface(IClass klass) {
         return isApplication(klass) && !klass.isInterface();
-
     }
 
-    private static boolean skipAbstractMethods(IMethod method) {
+    private static boolean skipAbstractMethod(IMethod method) {
         return isApplication(method.getDeclaringClass()) && !method.isAbstract();
     }
 
@@ -164,9 +161,5 @@ public final class WalaCallgraphConstructor {
     public static Boolean isExtension(IClass klass) {
         return klass.getClassLoader().getReference().equals(ClassLoaderReference.Extension);
     }
-
-    public static boolean isUppdateraScope(IMethod method) {
-        return (isApplication(method.getDeclaringClass()) || isExtension(method.getDeclaringClass()));
-}
 
 }

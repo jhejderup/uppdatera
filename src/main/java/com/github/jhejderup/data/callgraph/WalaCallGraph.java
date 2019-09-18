@@ -42,7 +42,7 @@ public final class WalaCallGraph implements Serializable, UniversalFunctionIdent
                 .stream()
                 .collect(toMap(c -> c.jarPath.toString(), Function.identity()));
         this.reverseGraph = WalaCallgraphConstructor
-                .resolveCalls(rawGraph)
+                .makeCHA(rawGraph)
                 .stream()
                 .collect(Collectors.toMap(call -> call.target,
                         call -> {
@@ -143,7 +143,7 @@ public final class WalaCallGraph implements Serializable, UniversalFunctionIdent
     @Override
     public Map<UFI, IMethod> mappings() {
         return WalaCallgraphConstructor
-                .resolveCalls(this.rawGraph)
+                .makeCHA(this.rawGraph)
                 .stream()
                 .flatMap(call -> Stream.of(call.source, call.target))
                 .collect(toMap(c -> convertToUFI(c), Function.identity(), (v1, v2) -> v1));
