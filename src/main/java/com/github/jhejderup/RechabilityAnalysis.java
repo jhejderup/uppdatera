@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -128,8 +129,6 @@ public class RechabilityAnalysis {
             //Create call graph
             var cg = WalaCallgraphConstructor.build(classpath);
 
-
-
             //Resolve call graph into a CHA call graph
             var CHACallgraph = WalaCallgraphConstructor.makeCHA(cg.rawGraph);
 
@@ -161,16 +160,12 @@ public class RechabilityAnalysis {
                     .filter(fn -> !cgNodes.contains(fn))
                     .collect(Collectors.toList());
 
-            var percentage = (((float) missingFns.size() / (float) cgNodes.size()) * 100);
-
-            System.out.println("We are missing " +
-                    missingFns.size() +
-                    " functions (" +
-                    percentage +
-                    "%)");
+            //Create folder for saving data
+            var ts = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+            Files.createDirectories(Paths.get("uppdatera",ts));
 
             //Write the missing functions to a file
-            Files.write(Paths.get("missing-fns.txt"), missingFns
+            Files.write(Paths.get("uppdatera",ts,"missing-fns.txt"), missingFns
                     .stream()
                     .map(fn -> fn.name)
                     .collect(Collectors.toList()));
@@ -184,32 +179,14 @@ public class RechabilityAnalysis {
                     .filter(fn -> !isRechable(fn, reverseCgMap))
                     .collect(Collectors.toList());
 
-            var percPaths = (((float) missingPaths.size() / (float) (functions.size() - missingFns.size()) * 100));
-
-            System.out.println("Not reachable paths " +
-                    missingPaths.size() +
-                    " functions (" +
-                    percPaths +
-                    "%)");
-
-            Files.write(Paths.get("missing-paths.txt"), missingPaths
+            Files.write(Paths.get("uppdatera",ts,"missing-paths.txt"), missingPaths
                     .stream()
                     .map(fn -> fn.name)
                     .collect(Collectors.toList()));
 
             String header = "total\tmissing_nodes\tmissing_paths";
             String results = functions.size() + "\t" + missingFns.size() + "\t" + missingPaths.size();
-            Files.write(Paths.get("results.txt"), List.of(header, results));
-
-            //KEEP FOR DEBUGGING
-//            reverseCgMap.entrySet()
-//                    .parallelStream()
-//                    .map(e -> e.getKey().toString() + " ->
-//                    [" +
-//                    e.getValue().parallelStream().map(UppdateraMethod::toString).collect(Collectors.joining(","))
-//                    + "]")
-//                    .forEach(System.out::println);
-
+            Files.write(Paths.get("uppdatera",ts,"stats.txt"), List.of(header, results));
 
         } catch (IOException e) {
             e.printStackTrace();
