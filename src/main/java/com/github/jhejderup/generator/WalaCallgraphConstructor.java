@@ -100,7 +100,7 @@ public final class WalaCallgraphConstructor {
                             .stream(callSites.spliterator(), true)
                             .flatMap(site -> {
                                 MethodReference ref = site.getDeclaredTarget();
-                                if(site.isDispatch()){
+                                if (site.isDispatch()) {
                                     return cg.getClassHierarchy()
                                             .getPossibleTargets(ref)
                                             .stream()
@@ -110,11 +110,11 @@ public final class WalaCallgraphConstructor {
                                                     target));
                                 } else {
                                     IMethod target = cg.getClassHierarchy().resolveMethod(ref);
-                                    if(target != null){
+                                    if (target != null) {
                                         return Stream.of(new ResolvedCall(
-                                            node.getMethod(),
-                                            site.getInvocationCode(),
-                                            target));
+                                                node.getMethod(),
+                                                site.getInvocationCode(),
+                                                target));
                                     } else {
                                         return null;
                                     }

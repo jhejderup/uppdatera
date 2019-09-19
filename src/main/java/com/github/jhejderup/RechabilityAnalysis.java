@@ -12,9 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,7 +43,7 @@ public class RechabilityAnalysis {
 
     }
 
-    public static Set<UppdateraMethod> getFunctions() throws IOException {
+    public static Set<UppdateraMethod> readRecordedFunctions() throws IOException {
         return Files.lines(Paths.get("functions.txt"))
                 .map(l -> new UppdateraMethod(l, ClassLoaderReference.Extension))
                 .collect(Collectors.toSet());
@@ -73,6 +71,33 @@ public class RechabilityAnalysis {
                 .collect(Collectors.toSet());
     }
 
+
+    public static boolean isRechable(UppdateraMethod m, Map<UppdateraMethod, Set<UppdateraMethod>> cg) {
+        var visited = new HashSet<UppdateraMethod>();
+        var queue = new Stack<UppdateraMethod>();
+
+        //Add first value
+        queue.add(m);
+        visited.add(m);
+        //Keep Searching
+        while (queue.size() > 0) {
+            var elem = queue.pop();
+            if (elem.classLoader.equals(ClassLoaderReference.Application))
+                return true;
+            if (cg.containsKey(elem)) {
+                cg.get(elem)
+                        .parallelStream()
+                        .filter(c -> !visited.contains(c))
+                        .forEach(c -> {
+                            visited.add(c);
+                            queue.add(c);
+                        });
+            }
+        }
+        return false;
+    }
+
+
     public static void main(String[] args) {
         ///
         /// How does it work?
@@ -89,7 +114,7 @@ public class RechabilityAnalysis {
         String PROJECT_DEPS = "target/dependency";
 
         try {
-            var functions = getFunctions();
+            var functions = readRecordedFunctions();
             var project = new MavenResolvedCoordinate("", "", "", Path.of(PROJECT_JAR));
             var dependencies = Files.find(Paths.get(PROJECT_DEPS),
                     Integer.MAX_VALUE,
@@ -103,16 +128,19 @@ public class RechabilityAnalysis {
             //Create call graph
             var cg = WalaCallgraphConstructor.build(classpath);
 
-            //Resolve function calls
-            var resolvedCalls = WalaCallgraphConstructor.makeCHA(cg.rawGraph);
+
+
+            //Resolve call graph into a CHA call graph
+            var CHACallgraph = WalaCallgraphConstructor.makeCHA(cg.rawGraph);
 
             Function<IMethod, UppdateraMethod> toUppdatera =
                     m -> new UppdateraMethod(toUppdateraFunctionString(m), getClassLoader(m));
 
 
             //Flip edges and create a reverse cg
-            var reverseCgMap = resolvedCalls
+            var reverseCgMap = CHACallgraph
                     .stream()
+                    .filter(call -> !getClassLoader(call.target).equals(ClassLoaderReference.Primordial))
                     .collect(Collectors.toMap(
                             c -> toUppdatera.apply(c.target),
                             c -> Set.of(toUppdatera.apply(c.source)),
@@ -121,20 +149,19 @@ public class RechabilityAnalysis {
                     );
 
             //Set of all functions in the call graph
-            var cgFns = resolvedCalls.stream()
+            var cgNodes = CHACallgraph.stream()
                     .flatMap(call -> Stream.of(call.target, call.source))
                     .map(m -> toUppdatera.apply(m))
                     .collect(Collectors.toSet());
 
 
-
-            //1. Check that all functions exists in the CG!
+            //1. Evaluate if we have all functions nodes in the call graph
             var missingFns = functions
                     .stream()
-                    .filter(fn -> !cgFns.contains(fn))
+                    .filter(fn -> !cgNodes.contains(fn))
                     .collect(Collectors.toList());
 
-            var percentage = (((float) missingFns.size() / (float) functions.size()) * 100);
+            var percentage = (((float) missingFns.size() / (float) cgNodes.size()) * 100);
 
             System.out.println("We are missing " +
                     missingFns.size() +
@@ -142,17 +169,46 @@ public class RechabilityAnalysis {
                     percentage +
                     "%)");
 
-            System.out.println("These are not present:");
-            //TODO: write to file
-            missingFns
+            //Write the missing functions to a file
+            Files.write(Paths.get("missing-fns.txt"), missingFns
                     .stream()
                     .map(fn -> fn.name)
-                    .forEach(System.out::println);
+                    .collect(Collectors.toList()));
 
 
             //2. Search algorithm (per function)
             // - only visit new keys! (never the same)
             // - stop criteria: next key belongs to Application Loader
+            var missingPaths = functions
+                    .parallelStream()
+                    .filter(fn -> !isRechable(fn, reverseCgMap))
+                    .collect(Collectors.toList());
+
+            var percPaths = (((float) missingPaths.size() / (float) (functions.size() - missingFns.size()) * 100));
+
+            System.out.println("Not reachable paths " +
+                    missingPaths.size() +
+                    " functions (" +
+                    percPaths +
+                    "%)");
+
+            Files.write(Paths.get("missing-paths.txt"), missingPaths
+                    .stream()
+                    .map(fn -> fn.name)
+                    .collect(Collectors.toList()));
+
+            String header = "total\tmissing_nodes\tmissing_paths";
+            String results = functions.size() + "\t" + missingFns.size() + "\t" + missingPaths.size();
+            Files.write(Paths.get("results.txt"), List.of(header, results));
+
+            //KEEP FOR DEBUGGING
+//            reverseCgMap.entrySet()
+//                    .parallelStream()
+//                    .map(e -> e.getKey().toString() + " ->
+//                    [" +
+//                    e.getValue().parallelStream().map(UppdateraMethod::toString).collect(Collectors.joining(","))
+//                    + "]")
+//                    .forEach(System.out::println);
 
 
         } catch (IOException e) {
@@ -186,6 +242,11 @@ public class RechabilityAnalysis {
 
             UppdateraMethod m = (UppdateraMethod) obj;
             return Objects.equals(name, m.name) && Objects.equals(classLoader, m.classLoader);
+        }
+
+        @Override
+        public String toString() {
+            return name + ":" + classLoader.getName().toString();
         }
     }
 }
