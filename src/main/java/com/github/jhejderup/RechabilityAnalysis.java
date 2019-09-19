@@ -32,18 +32,6 @@ public class RechabilityAnalysis {
 
     }
 
-    public static int buildJARfile() {
-
-        BuiltProject b = EmbeddedMaven
-                .forProject("pom.xml")
-                .useDefaultDistribution()
-                .setGoals("jar:jar", "-Djar.finalName=uppdatera")
-                .build();
-
-        return b.getMavenBuildExitCode();
-
-    }
-
     public static Set<UppdateraMethod> readRecordedFunctions() throws IOException {
         return Files.lines(Paths.get("functions.txt"))
                 .map(l -> new UppdateraMethod(l, ClassLoaderReference.Extension))
@@ -106,17 +94,16 @@ public class RechabilityAnalysis {
         /// We fill the project-based classes in the Application Loader
         /// We fill the dependencies in the Extension Loader
 
-        var buildCode = buildJARfile();
-        assert buildCode == 0;
+
         var depCode = resolveDependencies();
         assert depCode == 0;
 
-        String PROJECT_JAR = "target/uppdatera.jar";
+        String PROJECT_CLASSES = "target/classes";
         String PROJECT_DEPS = "target/dependency";
 
         try {
             var functions = readRecordedFunctions();
-            var project = new MavenResolvedCoordinate("", "", "", Path.of(PROJECT_JAR));
+            var project = new MavenResolvedCoordinate("", "", "", Path.of(PROJECT_CLASSES));
             var dependencies = Files.find(Paths.get(PROJECT_DEPS),
                     Integer.MAX_VALUE,
                     (filePath, fileAttr) -> fileAttr.isRegularFile() && filePath.toString().endsWith(".jar"))
@@ -162,10 +149,10 @@ public class RechabilityAnalysis {
 
             //Create folder for saving data
             var ts = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
-            Files.createDirectories(Paths.get("uppdatera",ts));
+            Files.createDirectories(Paths.get("uppdatera", ts));
 
             //Write the missing functions to a file
-            Files.write(Paths.get("uppdatera",ts,"missing-fns.txt"), missingFns
+            Files.write(Paths.get("uppdatera", ts, "missing-fns.txt"), missingFns
                     .stream()
                     .map(fn -> fn.name)
                     .collect(Collectors.toList()));
@@ -179,14 +166,14 @@ public class RechabilityAnalysis {
                     .filter(fn -> !isRechable(fn, reverseCgMap))
                     .collect(Collectors.toList());
 
-            Files.write(Paths.get("uppdatera",ts,"missing-paths.txt"), missingPaths
+            Files.write(Paths.get("uppdatera", ts, "missing-paths.txt"), missingPaths
                     .stream()
                     .map(fn -> fn.name)
                     .collect(Collectors.toList()));
 
             String header = "total\tmissing_nodes\tmissing_paths";
             String results = functions.size() + "\t" + missingFns.size() + "\t" + missingPaths.size();
-            Files.write(Paths.get("uppdatera",ts,"stats.txt"), List.of(header, results));
+            Files.write(Paths.get("uppdatera", ts, "stats.txt"), List.of(header, results));
 
         } catch (IOException e) {
             e.printStackTrace();
