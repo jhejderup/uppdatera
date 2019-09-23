@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -28,18 +27,6 @@ public final class WalaCallgraphConstructor {
 
 
     private static Logger logger = LoggerFactory.getLogger(WalaCallgraphConstructor.class);
-
-    //A filter that accepts WALA objects that "belong" to the application loader.
-    private static Predicate<CGNode> applicationLoaderFilter =
-            node -> isApplication(node.getMethod().getDeclaringClass());
-
-    private static Predicate<CGNode> extensionLoaderFilter =
-            node -> isExtension(node.getMethod().getDeclaringClass());
-
-
-    private static Predicate<CGNode> uppdateraLoaderFilter =
-            node -> applicationLoaderFilter.test(node) ||
-                    extensionLoaderFilter.test(node);
 
     public static CallGraph build(ModuleClasspath analysisClasspath) {
 
@@ -133,7 +120,7 @@ public final class WalaCallgraphConstructor {
         Iterable<IClass> classes = () -> cha.iterator();
         var entryPoints = StreamSupport.stream(classes.spliterator(), false)
                 .filter(WalaCallgraphConstructor::skipInterface)
-                .flatMap(klass -> klass.getAllMethods().parallelStream())
+                .flatMap(clazz -> clazz.getAllMethods().parallelStream())
                 .filter(WalaCallgraphConstructor::skipAbstractMethod)
                 .map(m -> new DefaultEntrypoint(m, cha))
                 .collect(Collectors.toList());
@@ -150,10 +137,6 @@ public final class WalaCallgraphConstructor {
 
     public static Boolean isApplication(IClass klass) {
         return klass.getClassLoader().getReference().equals(ClassLoaderReference.Application);
-    }
-
-    public static Boolean isExtension(IClass klass) {
-        return klass.getClassLoader().getReference().equals(ClassLoaderReference.Extension);
     }
 
 }
