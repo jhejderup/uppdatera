@@ -111,7 +111,6 @@ public final class WalaCallgraphConstructor {
 
             cg.getNodes(srcMref)
                     .stream()
-                    .filter(uppdateraLoaderFilter)
                     .forEach(cgNode -> {
                         itrToStream(cgNode.iterateCallSites())
                                 .flatMap(cs -> cg.getPossibleTargets(cgNode, cs).stream())
