@@ -1,20 +1,17 @@
 package com.github.jhejderup.data.callgraph;
 
-import com.ibm.wala.classLoader.IMethod;
-import com.ibm.wala.shrikeBT.IInvokeInstruction;
+import com.ibm.wala.types.MethodReference;
 
 import java.io.Serializable;
 
 public final class ResolvedCall implements Serializable {
 
-    public final IMethod target;
-    public final IMethod source;
-    public final IInvokeInstruction.Dispatch invoke;
+    public final MethodReference target;
+    public final MethodReference source;
 
 
-    public ResolvedCall(IMethod source, IInvokeInstruction.IDispatch invoke, IMethod target) {
+    public ResolvedCall(MethodReference source, MethodReference target) {
         this.source = source;
         this.target = target;
-        this.invoke = (IInvokeInstruction.Dispatch) invoke;
     }
 }

@@ -5,6 +5,7 @@ import com.github.jhejderup.data.type.MavenResolvedCoordinate;
 import com.github.jhejderup.generator.WalaCallgraphConstructor;
 import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.types.ClassLoaderReference;
+import com.ibm.wala.types.MethodReference;
 import org.jboss.shrinkwrap.resolver.api.maven.embedded.BuiltProject;
 import org.jboss.shrinkwrap.resolver.api.maven.embedded.EmbeddedMaven;
 
@@ -38,10 +39,8 @@ public class RechabilityAnalysis {
                 .collect(Collectors.toSet());
     }
 
-    public static String toUppdateraFunctionString(IMethod m) {
-        var ref = m.getReference();
+    public static String toUppdateraFunctionString(MethodReference ref) {
         return ref.getDeclaringClass().getName().toString() + "/" + ref.getSelector();
-
     }
 
     public static Boolean isApplicationOrExtension(IMethod m) {
@@ -51,6 +50,10 @@ public class RechabilityAnalysis {
 
     public static ClassLoaderReference getClassLoader(IMethod m) {
         return m.getReference().getDeclaringClass().getClassLoader();
+    }
+
+    public static ClassLoaderReference getClassLoader(MethodReference m) {
+        return m.getDeclaringClass().getClassLoader();
     }
 
     // Generic function to merge two sets in Java
@@ -117,9 +120,9 @@ public class RechabilityAnalysis {
             var cg = WalaCallgraphConstructor.build(classpath);
 
             //Resolve call graph into a CHA call graph
-            var CHACallgraph = WalaCallgraphConstructor.makeCHA(cg.rawGraph);
+            var CHACallgraph = WalaCallgraphConstructor.makeCHA(cg);
 
-            Function<IMethod, UppdateraMethod> toUppdatera =
+            Function<MethodReference, UppdateraMethod> toUppdatera =
                     m -> new UppdateraMethod(toUppdateraFunctionString(m), getClassLoader(m));
 
 

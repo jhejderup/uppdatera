@@ -2,23 +2,21 @@ package com.github.jhejderup.generator;
 
 import com.github.jhejderup.data.ModuleClasspath;
 import com.github.jhejderup.data.callgraph.ResolvedCall;
-import com.github.jhejderup.data.callgraph.WalaCallGraph;
-import com.ibm.wala.classLoader.*;
+import com.ibm.wala.classLoader.CallSiteReference;
+import com.ibm.wala.classLoader.IClass;
+import com.ibm.wala.classLoader.IMethod;
 import com.ibm.wala.ipa.callgraph.*;
 import com.ibm.wala.ipa.callgraph.impl.DefaultEntrypoint;
 import com.ibm.wala.ipa.callgraph.impl.Util;
 import com.ibm.wala.ipa.cha.ClassHierarchy;
 import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.types.ClassLoaderReference;
-import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.util.config.AnalysisScopeReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -43,7 +41,7 @@ public final class WalaCallgraphConstructor {
             node -> applicationLoaderFilter.test(node) ||
                     extensionLoaderFilter.test(node);
 
-    public static WalaCallGraph build(ModuleClasspath analysisClasspath) {
+    public static CallGraph build(ModuleClasspath analysisClasspath) {
 
         try {
             var classpath = analysisClasspath
@@ -81,58 +79,55 @@ public final class WalaCallgraphConstructor {
 
             //6 Build the call graph
             var builder = Util.makeRTABuilder(options, cache, cha, scope);
-            var callGraph = builder.makeCallGraph(options, null);
-            return new WalaCallGraph(callGraph, analysisClasspath);
+            return builder.makeCallGraph(options, null);
+
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
     }
 
-    public static List<ResolvedCall> makeCHA(CallGraph cg) {
-        Iterable<CGNode> cgNodes = () -> cg.iterator();
-        var calls = StreamSupport
-                .stream(cgNodes.spliterator(), false)
-                .filter(uppdateraLoaderFilter)
-                .flatMap(node -> {
-                    Iterable<CallSiteReference> callSites = () -> node.iterateCallSites();
-                    return StreamSupport
-                            .stream(callSites.spliterator(), true)
-                            .flatMap(site -> {
-                                MethodReference ref = site.getDeclaredTarget();
-                                if (site.isDispatch()) {
-                                    return cg.getClassHierarchy()
-                                            .getPossibleTargets(ref)
-                                            .stream()
-                                            .map(target -> new ResolvedCall(
-                                                    node.getMethod(),
-                                                    site.getInvocationCode(),
-                                                    target));
-                                } else {
-                                    IMethod target = cg.getClassHierarchy().resolveMethod(ref);
-                                    if (target != null) {
-                                        return Stream.of(new ResolvedCall(
-                                                node.getMethod(),
-                                                site.getInvocationCode(),
-                                                target));
-                                    } else {
-                                        return null;
-                                    }
-                                }
-
-                            });
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-        return calls;
+    private static <T> Stream<T> itrToStream(Iterator<T> itr) {
+        Iterable<T> iterable = () -> itr;
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 
-    public static String fetchJarFile(IClass klass) {
-        var shrikeKlass = (ShrikeClass) klass;
-        var moduleEntry = (JarFileEntry) shrikeKlass.getModuleEntry();
-        var jarFile = moduleEntry.getJarFile();
-        var jarPath = jarFile.getName();
-        return jarPath;
+    public static List<ResolvedCall> makeCHA(CallGraph cg) {
+        //Get all entrypoints and turn into a J8 Stream
+        var entryPointsStream = itrToStream(cg.getFakeRootNode().iterateCallSites());
+
+        //Place initial nodes in a work list
+        var workList = entryPointsStream
+                .map(CallSiteReference::getDeclaredTarget)
+                .collect(Collectors.toCollection(Stack::new));
+
+        var visited = new HashSet<>();
+        var calls = new ArrayList<ResolvedCall>();
+
+        while (!workList.empty()) {
+            var srcMref = workList.pop();
+            //Resolve ref to impl
+            var resolveMethod = cg.getClassHierarchy().resolveMethod(srcMref);
+
+            cg.getNodes(srcMref)
+                    .stream()
+                    .filter(uppdateraLoaderFilter)
+                    .forEach(cgNode -> {
+                        itrToStream(cgNode.iterateCallSites())
+                                .flatMap(cs -> cg.getPossibleTargets(cgNode, cs).stream())
+                                .map(n -> n.getMethod().getReference())
+                                .forEach(csMref -> {
+                                    if (!visited.contains(csMref)) {
+                                        workList.add(csMref);
+                                        visited.add(csMref);
+                                    }
+                                    if (resolveMethod != null) {
+                                        calls.add(new ResolvedCall(resolveMethod.getReference(), csMref));
+                                    }
+                                });
+                    });
+        }
+        return calls;
     }
 
     private static ArrayList<Entrypoint> makeEntryPoints(ClassHierarchy cha) {
