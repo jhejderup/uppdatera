@@ -1,7 +1,22 @@
-package com.github.jhejderup.generator;
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.github.jhejderup.callgraph;
 
-import com.github.jhejderup.data.ModuleClasspath;
-import com.github.jhejderup.data.callgraph.ResolvedCall;
 import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IMethod;
@@ -15,46 +30,35 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import static java.util.stream.Collectors.joining;
 
 public final class WalaCallgraphConstructor {
 
   private static Logger logger = LoggerFactory
       .getLogger(WalaCallgraphConstructor.class);
 
-  public static CallGraph build(ModuleClasspath analysisClasspath,
-      String filename) {
+  public static CallGraph build(String classpath_project,
+      String classpath_depz) {
 
     try {
-      var classpath = analysisClasspath.getCompleteClasspath().stream()
-          .map(c -> c.jarPath.toString()).collect(joining(":"));
 
-      logger.info("Building call graph with classpath: {}", classpath);
+      logger.info("Building call graph with project classpath: {}",
+          classpath_project);
+      logger
+          .info("Building call graph with depz classpath: {}", classpath_depz);
       //1. Fetch exclusion file
       var classLoader = WalaCallgraphConstructor.class.getClassLoader();
       var exclusionFile = new File(
           classLoader.getResource("Java60RegressionExclusions.txt").getFile());
 
-      var appJAR = analysisClasspath.project.jarPath.toString();
-
       //2. Set the analysis scope
       var scope = AnalysisScopeReader
-          .makeJavaBinaryAnalysisScope(appJAR, exclusionFile);
-
-      if (analysisClasspath.dependencies.isPresent()) {
-
-        var depzJARpath = analysisClasspath.dependencies.get().stream()
-            .map(c -> c.jarPath.toString()).collect(joining(":"));
-        AnalysisScopeReader.addClassPathToScope(depzJARpath, scope,
-            scope.getLoader(AnalysisScope.EXTENSION));
-      }
+          .makeJavaBinaryAnalysisScope(classpath_project, exclusionFile);
+      AnalysisScopeReader.addClassPathToScope(classpath_depz, scope,
+          scope.getLoader(AnalysisScope.EXTENSION));
 
       //3. Class Hierarchy for name resolution -> missing superclasses are replaced by the ClassHierarchy root,
       //   i.e. java.lang.Object
@@ -71,12 +75,6 @@ public final class WalaCallgraphConstructor {
       var builder = Util.makeRTABuilder(options, cache, cha, scope);
       var cg = builder.makeCallGraph(options, null);
 
-      var depclasses = itrToStream(cha.iterator()).filter(c -> !c.isInterface())
-          .filter(c -> isExtension(scope, c)).map(c -> c.getName())
-          .map(t -> t.toString().substring(1));
-
-      Files.write(Paths.get(filename, "wala-dep-cha.txt"),
-          (Iterable<String>) depclasses::iterator);
       return cg;
 
     } catch (Exception e) {

@@ -3,6 +3,7 @@ javax\/swing\/.*
 sun\/awt\/.*
 sun\/swing\/.*
 com\/sun\/.*
+sun\/.*
 org\/netbeans\/.*
 org\/openide\/.*
 com\/ibm\/crypto\/.*
@@ -15,5 +16,7 @@ com\/apple\/.*
 jdk\/.*
 org\/omg\/.*
 org\/w3c\/.*
-javax\/.*
 org\/junit\/.*
+org\/testng\/.*
+org\/mockito\/.*
+org\/apache\/maven\/.*
