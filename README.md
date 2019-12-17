@@ -7,6 +7,7 @@ Static Regression Detection for Automated Dependency Updates in Maven Projects
 
 ### Prerequisites
 - JDK 8
+- Maven
 - git 
 
 ### Building
