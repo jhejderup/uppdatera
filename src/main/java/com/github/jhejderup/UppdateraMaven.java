@@ -31,17 +31,21 @@ import spoon.reflect.declaration.CtType;
 import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.reference.CtTypeReference;
 
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class Uppdatera {
+public class UppdateraMaven {
 
   public static  Map<String, String> spoonToJVM = new HashMap<>();
   private static Logger              logger     = LoggerFactory
-      .getLogger(Uppdatera.class);
+      .getLogger(UppdateraMaven.class);
 
   static {
     spoonToJVM.put("byte", "B");
@@ -95,7 +99,7 @@ public class Uppdatera {
   /// - [4] version old
   /// - [5] version new
   //////////
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
     assert args.length == 6;
 
     var clpathProject = args[0];
@@ -138,17 +142,69 @@ public class Uppdatera {
     var graph = new Reachability(cg);
 
     ///
-    /// 3. Diffing
+    /// 3. Diffing & Reachability Analysis
     ///
     var gumDiff = new GumDiffer(new String[] { oldJar.get().toString() });
 
-    GitDiffer.diff(oldSrc.get(), newSrc.get()).filter(fd -> fd.isJavaFile())
-        .filter(fd -> fd.isNotTestFile()).filter(fd -> fd.isImpactKind())
-        .map(fd -> gumDiff.diff(fd)).filter(gd -> gd.methodDiffs.isPresent())
-        .flatMap(gd -> gd.methodDiffs.get().keySet().stream())
-        .map(k -> graph.search(SpoonToJVMString(k))).filter(p -> p.size() > 0)
-        .map(p -> p.stream().collect(Collectors.joining(" -> ")))
-        .forEach(System.out::println);
+    var result = GitDiffer.diff(oldSrc.get(), newSrc.get())
+        .filter(fd -> fd.isJavaFile()).filter(fd -> fd.isNotTestFile())
+        .filter(fd -> fd.isImpactKind()).map(fd -> gumDiff.diff(fd))
+        .filter(gd -> gd.methodDiffs.isPresent())
+        .flatMap(gd -> gd.methodDiffs.get().entrySet().stream()).map(md -> {
+          String jvm_name;
+          jvm_name = SpoonToJVMString(md.getKey());
+          var path = graph.search(jvm_name);
+          return new ResultData(jvm_name, path, md.getValue());
+        }).collect(Collectors.toList());
+
+    var fileWriter = new FileWriter("report.md");
+    var printWriter = new PrintWriter(fileWriter);
+    printWriter.println("Hi!");
+    printWriter.printf(
+        "Bumping **%s** from **%s** to **%s** could introduce regression changes in your project. This update impacts the following methods:\n",
+        args[2] + ":" + args[3], args[4], args[5]);
+    printWriter.println("<details><summary>**Regression Changes**</summary><p>");
+
+    for (var res: result) {
+
+      if(res.path.size() > 0){
+        printWriter.printf("<details><summary>%s</summary><p>\n", res.JVMName);
+
+        Collections.reverse(res.path);
+
+        printWriter.printf("<details><summary>Impacted Paths</summary><p>\n");
+        printWriter.println("```");
+        printWriter.printf("%s\n", res.path.get(0));
+
+        for (int i = 1; i < res.path.size() - 1; i++) {
+          printWriter.println("│");
+          printWriter.printf("└─── %s\n", res.path.get(i));
+        }
+        printWriter.println("```");
+        printWriter.println("</p></details>");
+
+        printWriter.printf("<details><summary>Changes</summary><p>\n");
+
+        for (var change: res.changes) {
+          printWriter.println(change);
+        }
+        printWriter.println("</p></details>");
+
+
+        printWriter.println("</p></details>");
+
+
+
+
+      }
+
+    }
+    printWriter.println("</p></details>");
+    printWriter.println("");
+    printWriter.println("**We recommend to review these changes before merging**");
+
+    printWriter.close();
+
   }
 
 }

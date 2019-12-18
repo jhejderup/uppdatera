@@ -90,7 +90,7 @@
                     <archive>
                         <manifest>
                             <mainClass>
-                                com.github.jhejderup.Uppdatera
+                                com.github.jhejderup.UppdateraMaven
                             </mainClass>
                         </manifest>
                     </archive>
