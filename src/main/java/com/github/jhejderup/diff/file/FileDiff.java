@@ -69,7 +69,7 @@ public final class FileDiff implements Serializable {
         .orElse(false);
   }
 
-  public  boolean isNotTestFile(){
+  public boolean isNotTestFile() {
     return this.srcFile.map(path -> !path.toString().endsWith("/src/test/"))
         .orElse(true);
   }

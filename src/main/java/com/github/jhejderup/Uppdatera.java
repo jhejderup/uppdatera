@@ -17,13 +17,12 @@
  */
 package com.github.jhejderup;
 
+import com.github.jhejderup.analysis.Reachability;
 import com.github.jhejderup.artifact.maven.Artifact;
 import com.github.jhejderup.artifact.maven.Coordinate;
 import com.github.jhejderup.callgraph.WalaCallgraphConstructor;
 import com.github.jhejderup.diff.ast.GumDiffer;
 import com.github.jhejderup.diff.file.GitDiffer;
-import com.ibm.wala.types.ClassLoaderReference;
-import com.ibm.wala.types.MethodReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spoon.reflect.declaration.CtExecutable;
@@ -40,8 +39,9 @@ import java.util.stream.IntStream;
 
 public class Uppdatera {
 
-  public static Map<String, String> spoonToJVM = new HashMap<>();
-  private static Logger logger = LoggerFactory.getLogger(Uppdatera.class);
+  public static  Map<String, String> spoonToJVM = new HashMap<>();
+  private static Logger              logger     = LoggerFactory
+      .getLogger(Uppdatera.class);
 
   static {
     spoonToJVM.put("byte", "B");
@@ -53,6 +53,37 @@ public class Uppdatera {
     spoonToJVM.put("short", "S");
     spoonToJVM.put("boolean", "Z");
     spoonToJVM.put("void", "V");
+  }
+
+  private static String SpoonToJVMString(CtExecutable item) {
+    var clazz = ((CtType) (item.getParent())).getReference();
+    var ret = item.getType();
+    var args = Arrays.stream(item.getParameters().toArray())
+        .map(CtParameter.class::cast).map(arg -> toJVMType(arg.getType(), true))
+        .collect(Collectors.joining(""));
+
+    return toJVMType(clazz, false) + "/" + item.getSimpleName() + "(" + args
+        + ")" + toJVMType(ret, true);
+
+  }
+
+  private static String toJVMType(CtTypeReference type, boolean isMethodDesc) {
+    var JVMType = new StringBuilder();
+
+    if (type instanceof CtArrayTypeReference) {
+      var brackets = ((CtArrayTypeReference) type).getDimensionCount();
+      IntStream.rangeClosed(1, brackets).forEach(i -> JVMType.append("["));
+    }
+
+    if (type.isPrimitive()) {
+      JVMType.append(spoonToJVM.get(type.getSimpleName()));
+    } else {
+      JVMType.append("L");
+      JVMType.append(type.getQualifiedName().replace(".", "/"));
+      if (isMethodDesc)
+        JVMType.append(";");
+    }
+    return JVMType.toString();
   }
 
   //////////
@@ -71,7 +102,7 @@ public class Uppdatera {
     var clpathDepz = args[1];
 
     ///
-    /// Validate and download artifacts
+    /// 1. Validate and download artifacts
     ///
     var oldCoord = new Coordinate(args[2], args[3], args[4]);
     var newCoord = new Coordinate(args[2], args[3], args[5]);
@@ -97,69 +128,27 @@ public class Uppdatera {
     if (!clpathDepz.contains(filenameOldJar)) {
       logger.error("[Uppdatera] `" + filenameOldJar
           + "` is not in the dep classpath of `" + clpathDepz + "`");
-      // return;
+      return;
     }
 
     ///
-    /// Call Graph Generation
+    /// 2. Call Graph Generation
     ///
-    var cg = WalaCallgraphConstructor.build(clpathProject, clpathDepz);
-    var CHAcg = WalaCallgraphConstructor.makeCHA(cg);
-
+    var cg = WalaCallgraphConstructor.buildCHA(clpathProject, clpathDepz);
+    var graph = new Reachability(cg);
 
     ///
-    /// Diffing
+    /// 3. Diffing
     ///
     var gumDiff = new GumDiffer(new String[] { oldJar.get().toString() });
 
     GitDiffer.diff(oldSrc.get(), newSrc.get()).filter(fd -> fd.isJavaFile())
         .filter(fd -> fd.isNotTestFile()).filter(fd -> fd.isImpactKind())
         .map(fd -> gumDiff.diff(fd)).filter(gd -> gd.methodDiffs.isPresent())
-        .forEach(gd -> {
-
-          for (var entry : gd.methodDiffs.get().keySet()) {
-            try {
-              System.out.println(toJVMString(entry));
-            } catch (Exception e) {
-              e.printStackTrace();
-            }
-          }
-        });
-
+        .flatMap(gd -> gd.methodDiffs.get().keySet().stream())
+        .map(k -> graph.search(SpoonToJVMString(k))).filter(p -> p.size() > 0)
+        .map(p -> p.stream().collect(Collectors.joining(" -> ")))
+        .forEach(System.out::println);
   }
-
-  private static String toJVMString(CtExecutable item) {
-    var clazz = ((CtType) (item.getParent())).getReference();
-    var ret = item.getType();
-    var args = Arrays.stream(item.getParameters().toArray())
-        .map(CtParameter.class::cast).map(arg -> toJVMType(arg.getType(), true))
-        .collect(Collectors.joining(""));
-
-    return toJVMType(clazz, false) + "(" + args + ")" + toJVMType(ret, true);
-
-  }
-
-  private static String toJVMType(CtTypeReference type, boolean isMethodDesc) {
-    var JVMType = new StringBuilder();
-
-    if (type instanceof CtArrayTypeReference) {
-      var brackets = ((CtArrayTypeReference) type).getDimensionCount();
-      IntStream.rangeClosed(1, brackets).forEach(i -> JVMType.append("["));
-    }
-
-    if (type.isPrimitive()) {
-      JVMType.append(spoonToJVM.get(type.getSimpleName()));
-    } else {
-      JVMType.append("L");
-      JVMType.append(type.getQualifiedName().replace(".", "/"));
-      if (isMethodDesc)
-        JVMType.append(";");
-    }
-    return JVMType.toString();
-  }
-
-    public static ClassLoaderReference getClassLoader(MethodReference m) {
-      return m.getDeclaringClass().getClassLoader();
-    }
 
 }

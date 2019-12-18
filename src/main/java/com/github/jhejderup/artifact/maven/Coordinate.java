@@ -22,7 +22,7 @@ public final class Coordinate {
   public final String groupId;
   public final String version;
 
-  public Coordinate(String groupId, String artifactId, String version){
+  public Coordinate(String groupId, String artifactId, String version) {
     this.artifactId = artifactId;
     this.groupId = groupId;
     this.version = version;

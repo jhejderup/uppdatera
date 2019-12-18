@@ -40,9 +40,8 @@ public final class WalaCallgraphConstructor {
   private static Logger logger = LoggerFactory
       .getLogger(WalaCallgraphConstructor.class);
 
-  public static CallGraph build(String classpath_project,
+  public static List<ResolvedCall> buildCHA(String classpath_project,
       String classpath_depz) {
-
     try {
 
       logger.info("Building call graph with project classpath: {}",
@@ -57,6 +56,7 @@ public final class WalaCallgraphConstructor {
       //2. Set the analysis scope
       var scope = AnalysisScopeReader
           .makeJavaBinaryAnalysisScope(classpath_project, exclusionFile);
+      //Add dependency classes under the extension scope
       AnalysisScopeReader.addClassPathToScope(classpath_depz, scope,
           scope.getLoader(AnalysisScope.EXTENSION));
 
@@ -75,7 +75,7 @@ public final class WalaCallgraphConstructor {
       var builder = Util.makeRTABuilder(options, cache, cha, scope);
       var cg = builder.makeCallGraph(options, null);
 
-      return cg;
+      return makeCHA(cg);
 
     } catch (Exception e) {
       e.printStackTrace();
@@ -88,7 +88,7 @@ public final class WalaCallgraphConstructor {
     return StreamSupport.stream(iterable.spliterator(), false);
   }
 
-  public static List<ResolvedCall> makeCHA(CallGraph cg) {
+  private static List<ResolvedCall> makeCHA(CallGraph cg) {
     //Get all entrypoints and turn into a J8 Stream
     var entryPointsStream = itrToStream(
         cg.getFakeRootNode().iterateCallSites());

@@ -31,8 +31,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 public final class GitDiffer implements Differ {
-  private static Logger logger = LoggerFactory
-      .getLogger(GitDiffer.class);
+  private static Logger logger = LoggerFactory.getLogger(GitDiffer.class);
+
   private static String execute(Path leftFolder, Path rightFolder)
       throws InterruptedException, TimeoutException, IOException {
     return new ProcessExecutor()

@@ -23,5 +23,6 @@ import java.util.Optional;
 
 public interface Package {
   Optional<Path> getSource() throws IOException;
+
   Optional<Path> getBinary() throws IOException;
 }

@@ -29,9 +29,8 @@ import java.util.Optional;
 
 public final class Artifact implements Package {
 
-  private static Logger         logger = LoggerFactory
-      .getLogger(Artifact.class);
-  private final  Coordinate     coord;
+  private static Logger     logger = LoggerFactory.getLogger(Artifact.class);
+  private final  Coordinate coord;
 
   public Artifact(Coordinate coord) {
     this.coord = coord;
@@ -56,7 +55,9 @@ public final class Artifact implements Package {
 
     } catch (Exception e) {
       e.printStackTrace();
-      logger.error("[ShrinkWrap] Failed to download and unzip sources for " + coord.toString());
+      logger.error(
+          "[ShrinkWrap] Failed to download and unzip sources for " + coord
+              .toString());
       return Optional.empty();
     }
   }
@@ -64,14 +65,15 @@ public final class Artifact implements Package {
   @Override
   public Optional<Path> getBinary() {
     try {
-      var jarFile = Maven.resolver().resolve(
-          coord.groupId + ":" + coord.artifactId + ":"
-              + coord.version).withoutTransitivity().asSingleFile();
+      var jarFile = Maven.resolver()
+          .resolve(coord.groupId + ":" + coord.artifactId + ":" + coord.version)
+          .withoutTransitivity().asSingleFile();
       logger.info(
           "[ShrinkWrap] Downloaded " + jarFile.toString() + " for " + coord);
       return Optional.of(jarFile.toPath());
     } catch (Exception e) {
-      logger.error("[ShrinkWrap] Failed to download jar file for" + coord.toString());
+      logger.error(
+          "[ShrinkWrap] Failed to download jar file for" + coord.toString());
       return Optional.empty();
     }
   }
