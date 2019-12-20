@@ -41,7 +41,6 @@ public final class Reachability {
 
     cg.stream().filter(call -> !getClassLoader(call.target)
         .equals(ClassLoaderReference.Primordial)).forEach(call -> {
-
       //populate lookup table
       var target = WALAToJVMIdentifier(call.target);
       var source = WALAToJVMIdentifier(call.source);

@@ -32,11 +32,9 @@ import spoon.reflect.declaration.CtType;
 import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.reference.CtTypeReference;
 
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.sql.PreparedStatement;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -157,53 +155,11 @@ public class UppdateraMaven {
           return new ResultData(methodID, path, md.getValue());
         }).collect(Collectors.toList());
 
-    var fileWriter = new FileWriter("report.md");
-    var printWriter = new PrintWriter(fileWriter);
-    printWriter.println("Hi!");
-    printWriter.printf(
-        "Bumping **%s** from **%s** to **%s** could introduce regression changes in your project. This update impacts the following methods:\n",
-        args[2] + ":" + args[3], args[4], args[5]);
-    printWriter
-        .println("<details><summary>**Regression Changes**</summary><p>");
-
-    for (var res : result) {
-
-      if (res.path.size() > 0) {
-        printWriter.printf("<details><summary>%s</summary><p>\n",
-            res.methodID.toString());
-
-        Collections.reverse(res.path);
-
-        printWriter.printf("<details><summary>Impacted Paths</summary><p>\n");
-        printWriter.println("```");
-        printWriter.printf("%s\n", res.path.get(0));
-
-        for (int i = 1; i < res.path.size() - 1; i++) {
-          printWriter.println("│");
-          printWriter.printf("└─── %s\n", res.path.get(i));
-        }
-        printWriter.println("```");
-        printWriter.println("</p></details>");
-
-        printWriter.printf("<details><summary>Changes</summary><p>\n");
-
-        for (var change : res.changes) {
-          printWriter.println(change);
-        }
-        printWriter.println("</p></details>");
-
-        printWriter.println("</p></details>");
-
-      }
-
-    }
-    printWriter.println("</p></details>");
-    printWriter.println("");
-    printWriter
-        .println("**We recommend to review these changes before merging**");
-
-    printWriter.close();
-
+    ///
+    /// 4. Generate a report
+    ///
+    result.stream().map(k -> k.generateCallTrace()).forEach(System.out::println);
   }
+
 
 }

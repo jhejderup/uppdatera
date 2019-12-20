@@ -105,6 +105,9 @@ public final class WalaCallgraphConstructor {
       //Resolve ref to impl
       var resolveMethod = cg.getClassHierarchy().resolveMethod(srcMref);
 
+
+
+
       cg.getNodes(srcMref).stream().forEach(cgNode -> {
         itrToStream(cgNode.iterateCallSites())
             .flatMap(cs -> cg.getPossibleTargets(cgNode, cs).stream())

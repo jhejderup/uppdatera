@@ -20,6 +20,8 @@ package com.github.jhejderup;
 import com.github.jhejderup.artifact.JVMIdentifier;
 import gumtree.spoon.diff.operations.Operation;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public final class ResultData {
@@ -34,4 +36,23 @@ public final class ResultData {
     this.path = path;
     this.changes = changes;
   }
+
+  public String generateCallTrace() {
+    if (path.size() > 0) {
+
+      var calltrace = new StringBuffer("affected methods: call dump\n");
+
+      for (int i = 0; i < this.path.size() - 1; i++) {
+
+        calltrace.append(
+            "\tat: " + this.path.get(i).clazzName.substring(1).replace("/", ".")
+                + "." + this.path.get(i).methodName + "\n");
+      }
+      return calltrace.toString();
+
+    } else {
+      return "";
+    }
+  }
+
 }
