@@ -6,7 +6,8 @@ Static Regression Detection for Automated Dependency Updates in Maven Projects
 ## Instructions
 
 ### Prerequisites
-- JDK 8
+- JDK 8 (for running the project)
+- JDK 11 (for building the project)
 - Maven
 - git 
 
@@ -34,6 +35,7 @@ java -jar target/uppdatera-0.0.1-SNAPSHOT-jar-with-dependencies.jar [0] [1] [2] 
 
 - [x] :construction: Refactor components
 - [ ] :chart_with_upwards_trend: Create neat reports
+- [ ] :chart_with_upwards_trend: add WALA line number in the stack trace
 - [ ] :bullettrain_side: Dockerize setup for running on servers
 - [ ] :inbox_tray: Improve logging
 - [ ] :construction_worker: Extensive testing
