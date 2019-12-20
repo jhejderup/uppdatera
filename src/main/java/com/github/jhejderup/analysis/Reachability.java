@@ -17,6 +17,7 @@
  */
 package com.github.jhejderup.analysis;
 
+import com.github.jhejderup.artifact.JVMIdentifier;
 import com.github.jhejderup.callgraph.ResolvedCall;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
@@ -32,7 +33,7 @@ public final class Reachability {
   private static Logger                                      logger = LoggerFactory
       .getLogger(Reachability.class);
   private final  Map<MethodReference, List<MethodReference>> graph;
-  private final  Map<String, MethodReference>                lookup;
+  private final  Map<JVMIdentifier, MethodReference>         lookup;
 
   public Reachability(List<ResolvedCall> cg) {
     this.graph = new HashMap<>();
@@ -42,8 +43,8 @@ public final class Reachability {
         .equals(ClassLoaderReference.Primordial)).forEach(call -> {
 
       //populate lookup table
-      var target = WALAToJVMString(call.target);
-      var source = WALAToJVMString(call.source);
+      var target = WALAToJVMIdentifier(call.target);
+      var source = WALAToJVMIdentifier(call.source);
 
       if (!this.lookup.containsKey(target)) {
         this.lookup.put(target, call.target);
@@ -61,30 +62,30 @@ public final class Reachability {
     });
   }
 
-  private static String WALAToJVMString(MethodReference ref) {
-    return ref.getDeclaringClass().getName().toString() + "/" + ref
-        .getSelector();
+  private static JVMIdentifier WALAToJVMIdentifier(MethodReference ref) {
+    return new JVMIdentifier(ref.getDeclaringClass().getName().toString(),
+        ref.getName().toString(), ref.getDescriptor().toString());
   }
 
   public static ClassLoaderReference getClassLoader(MethodReference m) {
     return m.getDeclaringClass().getClassLoader();
   }
 
-  public List<String> search(String jvmString) {
+  public List<JVMIdentifier> search(JVMIdentifier methodID) {
 
     ///
     /// Validate node
     ///
-    if (!this.lookup.containsKey(jvmString)) {
-      logger.info("[search] the function `" + jvmString
-          + "` is not called by the user");
+    if (!this.lookup.containsKey(methodID)) {
+      logger.info(
+          "[search] the function `" + methodID + "` is not called by the user");
       return new ArrayList<>();
     }
 
-    var root = this.lookup.get(jvmString);
+    var root = this.lookup.get(methodID);
 
     if (!getClassLoader(root).equals(ClassLoaderReference.Extension)) {
-      logger.error("[search] the function `" + jvmString
+      logger.error("[search] the function `" + methodID
           + "` is not a dependency node (e.g., Extension type)");
       return new ArrayList<>();
     }
@@ -92,9 +93,9 @@ public final class Reachability {
     ///
     /// Search
     ///
-    var queue = new LinkedList<List<String>>();
-    var visited = new HashSet<String>();
-    queue.add(Stream.of(jvmString).collect(Collectors.toList()));
+    var queue = new LinkedList<List<JVMIdentifier>>();
+    var visited = new HashSet<JVMIdentifier>();
+    queue.add(Stream.of(methodID).collect(Collectors.toList()));
 
     while (queue.size() > 0) {
       // Get first path in the queue
@@ -114,7 +115,8 @@ public final class Reachability {
           var neighbours = this.graph.get(vertex);
           for (var neighbour : neighbours) {
             var new_path = new ArrayList<>(path);
-            new_path.add(WALAToJVMString(neighbour)); //add to end of the list
+            new_path.add(WALAToJVMIdentifier(neighbour));
+            //add to end of the list
             queue.add(new_path);
           }
         }

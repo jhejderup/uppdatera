@@ -18,6 +18,7 @@
 package com.github.jhejderup;
 
 import com.github.jhejderup.analysis.Reachability;
+import com.github.jhejderup.artifact.JVMIdentifier;
 import com.github.jhejderup.artifact.maven.Artifact;
 import com.github.jhejderup.artifact.maven.Coordinate;
 import com.github.jhejderup.callgraph.WalaCallgraphConstructor;
@@ -59,15 +60,15 @@ public class UppdateraMaven {
     spoonToJVM.put("void", "V");
   }
 
-  private static String SpoonToJVMString(CtExecutable item) {
+  private static JVMIdentifier SpoonToJVMString(CtExecutable item) {
     var clazz = ((CtType) (item.getParent())).getReference();
     var ret = item.getType();
     var args = Arrays.stream(item.getParameters().toArray())
         .map(CtParameter.class::cast).map(arg -> toJVMType(arg.getType(), true))
         .collect(Collectors.joining(""));
 
-    return toJVMType(clazz, false) + "/" + item.getSimpleName() + "(" + args
-        + ")" + toJVMType(ret, true);
+    return new JVMIdentifier(toJVMType(clazz, false), item.getSimpleName(),
+        "(" + args + ")" + toJVMType(ret, true));
 
   }
 
@@ -151,10 +152,9 @@ public class UppdateraMaven {
         .filter(fd -> fd.isImpactKind()).map(fd -> gumDiff.diff(fd))
         .filter(gd -> gd.methodDiffs.isPresent())
         .flatMap(gd -> gd.methodDiffs.get().entrySet().stream()).map(md -> {
-          String jvm_name;
-          jvm_name = SpoonToJVMString(md.getKey());
-          var path = graph.search(jvm_name);
-          return new ResultData(jvm_name, path, md.getValue());
+          var methodID = SpoonToJVMString(md.getKey());
+          var path = graph.search(methodID);
+          return new ResultData(methodID, path, md.getValue());
         }).collect(Collectors.toList());
 
     var fileWriter = new FileWriter("report.md");
@@ -163,12 +163,14 @@ public class UppdateraMaven {
     printWriter.printf(
         "Bumping **%s** from **%s** to **%s** could introduce regression changes in your project. This update impacts the following methods:\n",
         args[2] + ":" + args[3], args[4], args[5]);
-    printWriter.println("<details><summary>**Regression Changes**</summary><p>");
+    printWriter
+        .println("<details><summary>**Regression Changes**</summary><p>");
 
-    for (var res: result) {
+    for (var res : result) {
 
-      if(res.path.size() > 0){
-        printWriter.printf("<details><summary>%s</summary><p>\n", res.JVMName);
+      if (res.path.size() > 0) {
+        printWriter.printf("<details><summary>%s</summary><p>\n",
+            res.methodID.toString());
 
         Collections.reverse(res.path);
 
@@ -185,23 +187,20 @@ public class UppdateraMaven {
 
         printWriter.printf("<details><summary>Changes</summary><p>\n");
 
-        for (var change: res.changes) {
+        for (var change : res.changes) {
           printWriter.println(change);
         }
         printWriter.println("</p></details>");
 
-
         printWriter.println("</p></details>");
-
-
-
 
       }
 
     }
     printWriter.println("</p></details>");
     printWriter.println("");
-    printWriter.println("**We recommend to review these changes before merging**");
+    printWriter
+        .println("**We recommend to review these changes before merging**");
 
     printWriter.close();
 

@@ -17,19 +17,20 @@
  */
 package com.github.jhejderup;
 
+import com.github.jhejderup.artifact.JVMIdentifier;
 import gumtree.spoon.diff.operations.Operation;
 
 import java.util.List;
 
 public final class ResultData {
 
-  public final String JVMName;
-  public final List<String> path;
-  public final List<Operation> changes;
+  public final JVMIdentifier       methodID;
+  public final List<JVMIdentifier> path;
+  public final List<Operation>     changes;
 
-  public ResultData(String JVMName, List<String> path,
+  public ResultData(JVMIdentifier methodID, List<JVMIdentifier> path,
       List<Operation> changes) {
-    this.JVMName = JVMName;
+    this.methodID = methodID;
     this.path = path;
     this.changes = changes;
   }
