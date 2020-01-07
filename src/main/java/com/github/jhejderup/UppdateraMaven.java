@@ -22,21 +22,28 @@ import com.github.jhejderup.artifact.JVMIdentifier;
 import com.github.jhejderup.artifact.maven.Artifact;
 import com.github.jhejderup.artifact.maven.Coordinate;
 import com.github.jhejderup.callgraph.WalaCallgraphConstructor;
+import com.github.jhejderup.diff.ast.AstComperator;
 import com.github.jhejderup.diff.ast.GumDiffer;
+import com.github.jhejderup.diff.ast.MethodDiff;
 import com.github.jhejderup.diff.file.GitDiffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spoon.reflect.code.CtStatement;
+import spoon.reflect.declaration.CtElement;
 import spoon.reflect.declaration.CtExecutable;
 import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.reference.CtTypeReference;
+import spoon.reflect.visitor.Filter;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.sql.PreparedStatement;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -140,25 +147,54 @@ public class UppdateraMaven {
     var cg = WalaCallgraphConstructor.buildCHA(clpathProject, clpathDepz);
     var graph = new Reachability(cg);
 
-    ///
-    /// 3. Diffing & Reachability Analysis
-    ///
-    var gumDiff = new GumDiffer(new String[] { oldJar.get().toString() });
 
-    var result = GitDiffer.diff(oldSrc.get(), newSrc.get())
+    GitDiffer.diff(oldSrc.get(), newSrc.get())
         .filter(fd -> fd.isJavaFile()).filter(fd -> fd.isNotTestFile())
-        .filter(fd -> fd.isImpactKind()).map(fd -> gumDiff.diff(fd))
-        .filter(gd -> gd.methodDiffs.isPresent())
-        .flatMap(gd -> gd.methodDiffs.get().entrySet().stream()).map(md -> {
-          var methodID = SpoonToJVMString(md.getKey());
-          var path = graph.search(methodID);
-          return new ResultData(methodID, path, md.getValue());
-        }).collect(Collectors.toList());
+        .filter(fd -> fd.isImpactKind())
+        .map(fd -> {
 
-    ///
-    /// 4. Generate a report
-    ///
-    result.stream().map(k -> k.generateCallTrace()).forEach(System.out::println);
+          AstComperator diff = new AstComperator(new String[] { oldJar.get().toString() });
+          Optional<Path> srcFile = fd.srcFile;
+          Optional<Path> dstFile = fd.dstFile;
+
+          logger.info("Compare File: {} -> {}", srcFile, dstFile);
+
+          try {
+            var editScript = fd.isFileRemoval() ?
+                diff.compare(diff.getCtType(srcFile.get().toFile()), null) :
+                diff.compare(srcFile.get().toFile(), dstFile.get().toFile());
+
+            return new MethodDiff(editScript,fd);
+
+          } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+          }
+        }).forEach(md -> md.getChangedMethods());
+
+
+
+    //    ///
+//    /// 3. Diffing & Reachability Analysis
+//    ///
+//    var gumDiff = new GumDiffer(new String[] { oldJar.get().toString() });
+//
+//    var result = GitDiffer.diff(oldSrc.get(), newSrc.get())
+//        .filter(fd -> fd.isJavaFile()).filter(fd -> fd.isNotTestFile())
+//        .filter(fd -> fd.isImpactKind()).map(fd -> gumDiff.diff(fd))
+//
+//        .filter(gd -> gd.methodDiffs.isPresent())
+//        .flatMap(gd -> gd.methodDiffs.get().entrySet().stream().map(md -> {
+//          var methodID = SpoonToJVMString(md.getKey());
+//          var path = graph.search(methodID);
+//          var numOfStmts = md.getKey().getBody().getElements(k -> k instanceof CtStatement).stream().count();
+//          return new ResultData(methodID, path, md.getValue(), (int) numOfStmts);
+//        })).collect(Collectors.toList());
+//
+//    ///
+//    /// 4. Generate a report
+//    ///
+//    result.stream().map(k -> k.generateCallTrace()).forEach(System.out::println);
   }
 
 
