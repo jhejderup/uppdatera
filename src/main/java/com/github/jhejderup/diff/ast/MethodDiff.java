@@ -105,40 +105,55 @@ public final class MethodDiff {
         // op node is dst side
         var dstNode = op.getSrcNode();
 
-        var dstNodeTree = (ITree) dstNode
-            .getMetadata(SpoonGumTreeBuilder.GUMTREE_NODE);
-        var dstNodeParentTree = mapping.firstMappedDstParent(dstNodeTree);
-        var srcNodeParentTree = mapping.getSrc(dstNodeParentTree);
+        // get top level method
+        var dstMethodOpt = getTopLevelMethod(dstNode);
 
-        // map dst -> src (if exists)
-        var dstNodeParent = (CtElement) dstNodeParentTree
-            .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
-        var srcNodeParent = (CtElement) srcNodeParentTree
-            .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+        if (!dstMethodOpt.isPresent()) {
+          return null;
+        } else {
 
-        // find top level method
-        var dstMethodOpt = getTopLevelMethod(dstNodeParent);
-        var srcMethodOpt = getTopLevelMethod(srcNodeParent);
-
-        // gen stats
-        if (dstMethodOpt.isPresent()) {
+          // get gum tree node
           var dstMethod = dstMethodOpt.get();
-          var srcMethod = srcMethodOpt.isPresent() ? srcMethodOpt.get() : null;
+          var dstMethodTree = (ITree) dstMethod
+              .getMetadata(SpoonGumTreeBuilder.GUMTREE_NODE);
 
-          if (srcMethod != null) {
-            return new MethodStats(((CtExecutable) srcMethod).getBody()
-                .getElements(el -> el instanceof CtStatement).size(),
-                ((CtExecutable) dstMethod).getBody()
-                    .getElements(el -> el instanceof CtStatement).size(),
-                (CtExecutable) srcMethod, (CtExecutable) dstMethod);
-          } else {
+          if (!mapping.hasDst(dstMethodTree)) {
+            var dstParent = mapping.firstMappedDstParent(dstMethodTree);
+            var srcParent = mapping.getSrc(dstParent);
+            var srcMet= (CtElement) srcParent
+                .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+            var dstMet = (CtElement) dstParent
+                .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+
+            var dm = getTopLevelMethod(dstMet);
+            var sm = getTopLevelMethod(srcMet);
+
+            return null;
+          }
+          // map dst -> src (if exists)
+          try {
+            var srcMethodTree = mapping.getSrc(dstMethodTree);
+            var srcMethod = (CtElement) srcMethodTree
+                .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+
+            if (srcMethod != null) {
+              return new MethodStats(((CtExecutable) srcMethod).getBody()
+                  .getElements(el -> el instanceof CtStatement).size(),
+                  ((CtExecutable) dstMethod).getBody()
+                      .getElements(el -> el instanceof CtStatement).size(),
+                  (CtExecutable) srcMethod, (CtExecutable) dstMethod);
+            } else {
+              return new MethodStats(0, ((CtExecutable) dstMethod).getBody()
+                  .getElements(el -> el instanceof CtStatement).size(), null,
+                  (CtExecutable) dstMethod);
+            }
+
+          } catch (Exception e) {
+            e.printStackTrace();
             return new MethodStats(0, ((CtExecutable) dstMethod).getBody()
                 .getElements(el -> el instanceof CtStatement).size(), null,
                 (CtExecutable) dstMethod);
           }
-
-        } else {
-          return null;
         }
 
       } else if (op instanceof DeleteOperation) {

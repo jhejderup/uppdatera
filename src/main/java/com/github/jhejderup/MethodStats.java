@@ -37,8 +37,14 @@ public final class MethodStats {
 
   @Override
   public String toString() {
-    return this.srcMethod.getSignature() + " -> " + this.dstMethod
-        .getSignature() + ": " + this.srcNumOfStmts + " -> "
-        + this.dstNumOfStmts;
+
+    if (this.srcMethod != null) {
+      return this.srcMethod.getSignature() + " -> " + this.dstMethod
+          .getSignature() + ": " + this.srcNumOfStmts + " -> "
+          + this.dstNumOfStmts;
+    } else {
+      return "None -> " + this.dstMethod.getSignature() + ": "
+          + this.srcNumOfStmts + " -> " + this.dstNumOfStmts;
+    }
   }
 }
