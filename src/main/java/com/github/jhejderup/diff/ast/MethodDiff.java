@@ -117,43 +117,22 @@ public final class MethodDiff {
           var dstMethodTree = (ITree) dstMethod
               .getMetadata(SpoonGumTreeBuilder.GUMTREE_NODE);
 
+          // map dst -> src (if exists)
           if (!mapping.hasDst(dstMethodTree)) {
-            var dstParent = mapping.firstMappedDstParent(dstMethodTree);
-            var srcParent = mapping.getSrc(dstParent);
-            var srcMet= (CtElement) srcParent
-                .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
-            var dstMet = (CtElement) dstParent
-                .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
-
-            var dm = getTopLevelMethod(dstMet);
-            var sm = getTopLevelMethod(srcMet);
-
+            // this inserted element is a part of another inserted element
+            // if there is no mapping, this is a new method
+            // we only track CHANGED methods (not new) hence there is no mapping
             return null;
           }
-          // map dst -> src (if exists)
-          try {
-            var srcMethodTree = mapping.getSrc(dstMethodTree);
-            var srcMethod = (CtElement) srcMethodTree
-                .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+          var srcMethodTree = mapping.getSrc(dstMethodTree);
+          var srcMethod = (CtElement) srcMethodTree
+              .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
 
-            if (srcMethod != null) {
-              return new MethodStats(((CtExecutable) srcMethod).getBody()
+          return new MethodStats(((CtExecutable) srcMethod).getBody()
+              .getElements(el -> el instanceof CtStatement).size(),
+              ((CtExecutable) dstMethod).getBody()
                   .getElements(el -> el instanceof CtStatement).size(),
-                  ((CtExecutable) dstMethod).getBody()
-                      .getElements(el -> el instanceof CtStatement).size(),
-                  (CtExecutable) srcMethod, (CtExecutable) dstMethod);
-            } else {
-              return new MethodStats(0, ((CtExecutable) dstMethod).getBody()
-                  .getElements(el -> el instanceof CtStatement).size(), null,
-                  (CtExecutable) dstMethod);
-            }
-
-          } catch (Exception e) {
-            e.printStackTrace();
-            return new MethodStats(0, ((CtExecutable) dstMethod).getBody()
-                .getElements(el -> el instanceof CtStatement).size(), null,
-                (CtExecutable) dstMethod);
-          }
+              (CtExecutable) srcMethod, (CtExecutable) dstMethod);
         }
 
       } else if (op instanceof DeleteOperation) {
