@@ -20,11 +20,9 @@ package com.github.jhejderup.diff.ast;
 import com.github.gumtreediff.tree.ITree;
 import com.github.jhejderup.MethodStats;
 import com.github.jhejderup.diff.file.FileDiff;
+import gumtree.spoon.builder.SpoonGumTreeBuilder;
 import gumtree.spoon.diff.Diff;
-import gumtree.spoon.diff.operations.DeleteOperation;
-import gumtree.spoon.diff.operations.InsertOperation;
-import gumtree.spoon.diff.operations.Operation;
-import gumtree.spoon.diff.operations.UpdateOperation;
+import gumtree.spoon.diff.operations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spoon.reflect.code.CtStatement;
@@ -67,6 +65,10 @@ public final class MethodDiff {
   }
 
   private static Optional<CtElement> getTopLevelMethod(CtElement node) {
+
+    if (isMethodKind(node)) {
+      return Optional.of(node);
+    }
     var parent = node.getParent();
     var stack = new Stack<CtElement>();
 
@@ -99,61 +101,112 @@ public final class MethodDiff {
     operations.stream().filter(MethodDiff::isSupportedOperation)
         .filter(MethodDiff::isChangeInMethod).map(op -> {
 
-      if (op instanceof UpdateOperation || op instanceof InsertOperation) {
+      if (op instanceof InsertOperation) {
+        // op node is dst side
+        var dstNode = op.getSrcNode();
 
-        var node = op instanceof InsertOperation ?
-            op.getSrcNode() :
-            op.getDstNode();
+        var dstNodeTree = (ITree) dstNode
+            .getMetadata(SpoonGumTreeBuilder.GUMTREE_NODE);
+        var dstNodeParentTree = mapping.firstMappedDstParent(dstNodeTree);
+        var srcNodeParentTree = mapping.getSrc(dstNodeParentTree);
 
-        var parentNodeOpt = getTopLevelMethod(node);
+        // map dst -> src (if exists)
+        var dstNodeParent = (CtElement) dstNodeParentTree
+            .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+        var srcNodeParent = (CtElement) srcNodeParentTree
+            .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
 
-        if (!parentNodeOpt.isPresent()) {
-          return null;
+        // find top level method
+        var dstMethodOpt = getTopLevelMethod(dstNodeParent);
+        var srcMethodOpt = getTopLevelMethod(srcNodeParent);
+
+        // gen stats
+        if (dstMethodOpt.isPresent()) {
+          var dstMethod = dstMethodOpt.get();
+          var srcMethod = srcMethodOpt.isPresent() ? srcMethodOpt.get() : null;
+
+          if (srcMethod != null) {
+            return new MethodStats(((CtExecutable) srcMethod).getBody()
+                .getElements(el -> el instanceof CtStatement).size(),
+                ((CtExecutable) dstMethod).getBody()
+                    .getElements(el -> el instanceof CtStatement).size(),
+                (CtExecutable) srcMethod, (CtExecutable) dstMethod);
+          } else {
+            return new MethodStats(0, ((CtExecutable) dstMethod).getBody()
+                .getElements(el -> el instanceof CtStatement).size(), null,
+                (CtExecutable) dstMethod);
+          }
+
         } else {
-
-          var dstParentNode = (CtExecutable) parentNodeOpt.get();
-          var dstParentTree = (ITree) dstParentNode.getMetadata("gtnode");
-
-          if (!mapping.hasDst(dstParentTree))
-            return null;
-          var srcParentTree = mapping.getSrc(dstParentTree);
-          var srcParentNode = (CtExecutable) srcParentTree
-              .getMetadata("spoon_object");
-//-1993687807@@getMD5
-          return new MethodStats(srcParentNode.getBody()
-              .getElements(el -> el instanceof CtStatement).size(),
-              dstParentNode.getBody()
-                  .getElements(el -> el instanceof CtStatement).size(),
-              srcParentNode, dstParentNode);
+          return null;
         }
 
       } else if (op instanceof DeleteOperation) {
+        return null;
 
-        var node = op.getSrcNode();
-        var parentNodeOpt = getTopLevelMethod(node);
+      } else if (op instanceof UpdateOperation) {
+        return null;
 
-        if (!parentNodeOpt.isPresent()) {
-          return null;
-        } else {
-          var srcParentNode = (CtExecutable) parentNodeOpt.get();
-          var srcParentTree = (ITree) srcParentNode.getMetadata("gtnode");
-          if (!mapping.hasSrc(srcParentTree))
-            return null;
-          var dstParentTree = mapping.getDst(srcParentTree);
-          var dstParentNode = (CtExecutable) dstParentTree
-              .getMetadata("spoon_object");
-
-          return new MethodStats(srcParentNode.getBody()
-              .getElements(el -> el instanceof CtStatement).size(),
-              dstParentNode.getBody()
-                  .getElements(el -> el instanceof CtStatement).size(),
-              srcParentNode, dstParentNode);
-        }
+      } else if (op instanceof MoveOperation) {
+        return null;
       }
       return null;
 
     }).filter(Objects::nonNull).forEach(System.out::println);
 
   }
+
+  //  public void getChangedMethods() {
+  //
+  //    var operations = fileDiff.isFileRemoval() ?
+  //        editScript.getAllOperations() :
+  //        editScript.getRootOperations();
+  //    var mapping = editScript.getMappingsComp();
+  //
+  //    operations.stream().filter(MethodDiff::isSupportedOperation)
+  //        .filter(MethodDiff::isChangeInMethod).map(op -> {
+  //
+  //      if (op instanceof UpdateOperation || op instanceof InsertOperation) {
+  //
+  //        var dstNode = op.getSrcNode();
+  //        if (op instanceof InsertOperation) {
+  //          // we take the corresponding node in the source tree
+  //          dstNode = (CtElement) op.getAction().getNode().getParent()
+  //              .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+  //        }
+  //
+  //        var dstTree = (ITree) dstNode.getMetadata("gtnode");
+  //
+  //        if (!mapping.hasDst(dstTree))
+  //          return null;
+  //
+  //        var srcTree = mapping.getSrc(dstTree);
+  //        var srcNode = (CtElement) srcTree.getMetadata("spoon_object");
+  //
+  //        var srcNodeParentOpt = getTopLevelMethod(srcNode);
+  //        var dstNodeParentOpt = getTopLevelMethod(dstNode);
+  //
+  //
+  //
+  //        if (srcNodeParentOpt.isPresent() && dstNodeParentOpt.isPresent()) {
+  //          var srcNodeParent = (CtExecutable) srcNodeParentOpt.get();
+  //          var dstNodeParent = (CtExecutable) dstNodeParentOpt.get();
+  //          return new MethodStats(srcNodeParent.getBody()
+  //              .getElements(el -> el instanceof CtStatement).size(),
+  //              dstNodeParent.getBody()
+  //                  .getElements(el -> el instanceof CtStatement).size(),
+  //              srcNodeParent, dstNodeParent);
+  //        } else {
+  //          return null;
+  //        }
+  //
+  //      } else if (op instanceof DeleteOperation) {
+  //        return null;
+  //      }
+  //      return null;
+  //
+  //    }).filter(Objects::nonNull).forEach(System.out::println);
+  //
+  //  }
 
 }
