@@ -153,6 +153,7 @@ public final class MethodDiff {
           if (!mapping.hasSrc(srcMethodTree)) {
             // this implies that the function is also deleted and hence not
             // mapped in the new version!
+            //TODO: Return deleted function
             return null;
           }
 
@@ -168,68 +169,73 @@ public final class MethodDiff {
 
         }
       } else if (op instanceof UpdateOperation) {
-        return null;
 
+        // op node is dst side
+        var dstNode = op.getDstNode();
+
+        // get top level method
+        var dstMethodOpt = getTopLevelMethod(dstNode);
+
+        if (!dstMethodOpt.isPresent()) {
+          return null;
+        } else {
+
+          // get gum tree node
+          var dstMethod = dstMethodOpt.get();
+          var dstMethodTree = (ITree) dstMethod
+              .getMetadata(SpoonGumTreeBuilder.GUMTREE_NODE);
+
+          // map dst -> src (if exists)
+          if (!mapping.hasDst(dstMethodTree)) {
+            // An updated node belonging to a new method!
+            return null;
+          }
+          var srcMethodTree = mapping.getSrc(dstMethodTree);
+          var srcMethod = (CtElement) srcMethodTree
+              .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+
+          return new MethodStats(((CtExecutable) srcMethod).getBody()
+              .getElements(el -> el instanceof CtStatement).size(),
+              ((CtExecutable) dstMethod).getBody()
+                  .getElements(el -> el instanceof CtStatement).size(),
+              (CtExecutable) srcMethod, (CtExecutable) dstMethod);
+        }
       } else if (op instanceof MoveOperation) {
-        return null;
+
+        // op node is dst side
+        var dstNode = op.getDstNode();
+
+        // get top level method
+        var dstMethodOpt = getTopLevelMethod(dstNode);
+
+        if (!dstMethodOpt.isPresent()) {
+          return null;
+        } else {
+
+          // get gum tree node
+          var dstMethod = dstMethodOpt.get();
+          var dstMethodTree = (ITree) dstMethod
+              .getMetadata(SpoonGumTreeBuilder.GUMTREE_NODE);
+
+          // map dst -> src (if exists)
+          if (!mapping.hasDst(dstMethodTree)) {
+            // An updated node belonging to a new method!
+            return null;
+          }
+          var srcMethodTree = mapping.getSrc(dstMethodTree);
+          var srcMethod = (CtElement) srcMethodTree
+              .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+
+          return new MethodStats(((CtExecutable) srcMethod).getBody()
+              .getElements(el -> el instanceof CtStatement).size(),
+              ((CtExecutable) dstMethod).getBody()
+                  .getElements(el -> el instanceof CtStatement).size(),
+              (CtExecutable) srcMethod, (CtExecutable) dstMethod);
+        }
       }
       return null;
 
     }).filter(Objects::nonNull).forEach(System.out::println);
 
   }
-
-  //  public void getChangedMethods() {
-  //
-  //    var operations = fileDiff.isFileRemoval() ?
-  //        editScript.getAllOperations() :
-  //        editScript.getRootOperations();
-  //    var mapping = editScript.getMappingsComp();
-  //
-  //    operations.stream().filter(MethodDiff::isSupportedOperation)
-  //        .filter(MethodDiff::isChangeInMethod).map(op -> {
-  //
-  //      if (op instanceof UpdateOperation || op instanceof InsertOperation) {
-  //
-  //        var dstNode = op.getSrcNode();
-  //        if (op instanceof InsertOperation) {
-  //          // we take the corresponding node in the source tree
-  //          dstNode = (CtElement) op.getAction().getNode().getParent()
-  //              .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
-  //        }
-  //
-  //        var dstTree = (ITree) dstNode.getMetadata("gtnode");
-  //
-  //        if (!mapping.hasDst(dstTree))
-  //          return null;
-  //
-  //        var srcTree = mapping.getSrc(dstTree);
-  //        var srcNode = (CtElement) srcTree.getMetadata("spoon_object");
-  //
-  //        var srcNodeParentOpt = getTopLevelMethod(srcNode);
-  //        var dstNodeParentOpt = getTopLevelMethod(dstNode);
-  //
-  //
-  //
-  //        if (srcNodeParentOpt.isPresent() && dstNodeParentOpt.isPresent()) {
-  //          var srcNodeParent = (CtExecutable) srcNodeParentOpt.get();
-  //          var dstNodeParent = (CtExecutable) dstNodeParentOpt.get();
-  //          return new MethodStats(srcNodeParent.getBody()
-  //              .getElements(el -> el instanceof CtStatement).size(),
-  //              dstNodeParent.getBody()
-  //                  .getElements(el -> el instanceof CtStatement).size(),
-  //              srcNodeParent, dstNodeParent);
-  //        } else {
-  //          return null;
-  //        }
-  //
-  //      } else if (op instanceof DeleteOperation) {
-  //        return null;
-  //      }
-  //      return null;
-  //
-  //    }).filter(Objects::nonNull).forEach(System.out::println);
-  //
-  //  }
-
 }
