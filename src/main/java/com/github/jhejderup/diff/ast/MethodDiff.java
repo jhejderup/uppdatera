@@ -136,8 +136,37 @@ public final class MethodDiff {
         }
 
       } else if (op instanceof DeleteOperation) {
-        return null;
+        // op node is src side
+        var srcNode = op.getSrcNode();
 
+        // get top level method
+        var srcMethodOpt = getTopLevelMethod(srcNode);
+
+        if (!srcMethodOpt.isPresent()) {
+          return null;
+        } else {
+          var srcMethod = srcMethodOpt.get();
+          var srcMethodTree = (ITree) srcMethod
+              .getMetadata(SpoonGumTreeBuilder.GUMTREE_NODE);
+
+          // src -> dst mapping
+          if (!mapping.hasSrc(srcMethodTree)) {
+            // this implies that the function is also deleted and hence not
+            // mapped in the new version!
+            return null;
+          }
+
+          var dstMethodTree = mapping.getDst(srcMethodTree);
+          var dstMethod = (CtElement) dstMethodTree
+              .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+
+          return new MethodStats(((CtExecutable) srcMethod).getBody()
+              .getElements(el -> el instanceof CtStatement).size(),
+              ((CtExecutable) dstMethod).getBody()
+                  .getElements(el -> el instanceof CtStatement).size(),
+              (CtExecutable) srcMethod, (CtExecutable) dstMethod);
+
+        }
       } else if (op instanceof UpdateOperation) {
         return null;
 
