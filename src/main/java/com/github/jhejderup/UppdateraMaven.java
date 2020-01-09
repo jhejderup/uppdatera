@@ -152,20 +152,27 @@ public class UppdateraMaven {
             numAffectedFunctions))).append("\n").append(new Text("<details>"))
         .append("\n")
         .append(new Text("<summary>Changelog</summary>")).append("\n")
-        .append(new Text("<p>")).append("\n");
+        .append(new Text("<p>")).append("\n\n");
 
 
     /// Each method
     result.stream().flatMap(md -> md.entrySet().stream())
         .filter(entry -> entry.getValue().path.size() > 0)
-        .map(entry -> entry.getValue().methodID)
-        .forEach(mid -> {
-          report.append(new Text(String.format("- [![f!](https://img.shields.io/static/v1?label=%s&message=%s()&color=orange)]()",mid.clazzName,mid.methodName))).append("\n");
+        .map(entry -> entry.getValue())
+        .forEach(v -> {
+          var mid = v.methodID;
+          report
+              .append(new Text(String.format("- [![f!](https://img.shields.io/static/v1?label=%s&message=%s()&color=orange)]()",mid.clazzName,mid.methodName)))
+              .append(new Text("<details><summary>Call Stack</summary>"))
+              .append(new Text(v.generateCallTraceMarkdown()))
+              .append("</details>")
+              .append(new Text("<details><summary>Changelog</summary></details>"))
+              .append("\n");
         });
 
     /// Ending paragraph
     report
-        .append(new Text("</p>")).append("\n")
+        .append(new Text("</p>")).append("\n\n")
         .append(new Text("</details>")).append("\n")
         .append("<hr>");
 

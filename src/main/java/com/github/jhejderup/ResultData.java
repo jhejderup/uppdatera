@@ -20,6 +20,7 @@ package com.github.jhejderup;
 import com.github.jhejderup.artifact.JVMIdentifier;
 import gumtree.spoon.diff.operations.Operation;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +50,34 @@ public final class ResultData {
             "\tat: " + this.path.get(i).clazzName.substring(1).replace("/", ".")
                 + "." + this.path.get(i).methodName + "\n");
       }
+      return calltrace.toString();
+
+    } else {
+      return "";
+    }
+  }
+
+  public String generateCallTraceMarkdown() {
+    if (path.size() > 0) {
+
+      var calltrace = new StringBuilder("<pre><code>");
+
+      int last = this.path.size() - 1;
+
+      calltrace.append("**" +
+          this.path.get(last).clazzName.substring(1).replace("/", ".") + "."
+              + this.path.get(last).methodName + "**\n");
+
+      for (int i = last - 1; i >= 0 ; i--) {
+
+        calltrace.append(
+            "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;at: " + this.path.get(i).clazzName.substring(1).replace("/", ".")
+                + "." + this.path.get(i).methodName + "\n");
+      }
+
+      calltrace.append("</code></pre>");
+
+
       return calltrace.toString();
 
     } else {
