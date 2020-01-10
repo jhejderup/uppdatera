@@ -18,7 +18,13 @@
 package com.github.jhejderup;
 
 import com.github.jhejderup.artifact.JVMIdentifier;
+import gumtree.spoon.builder.SpoonGumTreeBuilder;
+import gumtree.spoon.diff.operations.MoveOperation;
 import gumtree.spoon.diff.operations.Operation;
+import gumtree.spoon.diff.operations.UpdateOperation;
+import spoon.reflect.code.CtStatement;
+import spoon.reflect.cu.position.NoSourcePosition;
+import spoon.reflect.declaration.CtElement;
 
 import java.util.List;
 import java.util.Map;
@@ -106,15 +112,43 @@ public final class ResultData {
         report.append("<ul>");
 
         changes.stream().forEach(op -> {
-          report.append(String.format("<li>%s</li>",
-              op.getAction().getClass().getSimpleName()));
-        });
-        report.append("</ul>");
+
+          var nodeType = op.getNode().getClass().getSimpleName();
+          var type = nodeType.substring(2, nodeType.length() - 4);
+
+          var el = new StringBuilder(
+              op.getAction().getClass().getSimpleName() + " " + type);
+
+          var parent = op.getNode().getParent(e -> e instanceof CtStatement)
+              .getClass().getSimpleName();
+          var parType = parent.substring(2, parent.length() - 4);
+          el.append(" in " + parType);
+          if (op.getNode().getPosition() != null && !(op.getNode()
+              .getPosition() instanceof NoSourcePosition)) {
+            el.append(" (L" + op.getNode().getPosition().getLine() + ")");
+          }
+          if (op instanceof UpdateOperation || op instanceof MoveOperation) {
+            var elementDest = (CtElement) op.getAction().getNode()
+                .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT_DEST);
+
+            var parDst = elementDest.getParent(e -> e instanceof CtStatement)
+                .getClass().getSimpleName();
+            var parDstType = parDst.substring(2, parDst.length() - 4);
+            el.append(" to " + parDstType);
+
+            if (elementDest.getPosition() != null && !(elementDest
+                .getPosition() instanceof NoSourcePosition)) {
+              el.append(" (L" + elementDest.getPosition().getLine() + ")");
+            }
+
+          }
+
+          report.append(String.format("<li>%s</li>", el.toString()));
+        }); report.append("</ul>");
 
       });
 
-    }
-    return report.toString();
+    } return report.toString();
 
   }
 

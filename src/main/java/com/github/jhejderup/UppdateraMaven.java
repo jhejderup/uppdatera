@@ -178,6 +178,14 @@ public class UppdateraMaven {
         .append(new Text("</details>")).append("\n")
         .append("<hr>");
 
+    /// survey
+
+    report.append(new Text("Did Uppdatera do a good job?  Give this issue a :+1: if it is **useful**, :-1: if it is **not**, and :hand: if **neutral**. ")).append("\n\n");
+
+    report.append(new Text("<details>"));
+    report.append(new Text("<summary>Want to help us or have suggestions?</summary>")).append("\n\n");
+    report.append(new Text("We are a group of researchers trying to make automated dependency services more useful and user-friendly for developers. If you have feedback and questions of this, feel free to submit it [here]().")).append("\n\n");
+    report.append(new Text("</details>"));
     System.out.println(report);
 
   }
