@@ -123,7 +123,7 @@ public final class MethodDiff {
 
       var srcStmts = ((CtExecutable) srcMethod).getBody()
           .getElements(el -> el instanceof CtStatement).size();
-      var dstStmts = ((CtExecutable) srcMethod).getBody()
+      var dstStmts = ((CtExecutable) dstMethod).getBody()
           .getElements(el -> el instanceof CtStatement).size();
 
       var ms = new MethodStats(srcStmts, dstStmts,
@@ -170,7 +170,7 @@ public final class MethodDiff {
       // stats
       var srcStmts = ((CtExecutable) srcMethod).getBody()
           .getElements(el -> el instanceof CtStatement).size();
-      var dstStmts = ((CtExecutable) srcMethod).getBody()
+      var dstStmts = ((CtExecutable) dstMethod).getBody()
           .getElements(el -> el instanceof CtStatement).size();
 
       var ms = new MethodStats(srcStmts, dstStmts,
@@ -214,7 +214,7 @@ public final class MethodDiff {
       // stats
       var srcStmts = ((CtExecutable) srcMethod).getBody()
           .getElements(el -> el instanceof CtStatement).size();
-      var dstStmts = ((CtExecutable) srcMethod).getBody()
+      var dstStmts = ((CtExecutable) dstMethod).getBody()
           .getElements(el -> el instanceof CtStatement).size();
 
       var ms = new MethodStats(srcStmts, dstStmts,

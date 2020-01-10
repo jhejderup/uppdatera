@@ -162,11 +162,13 @@ public class UppdateraMaven {
         .forEach(v -> {
           var mid = v.methodID;
           report
-              .append(new Text(String.format("- [![f!](https://img.shields.io/static/v1?label=%s&message=%s()&color=orange)]()",mid.clazzName,mid.methodName)))
+              .append(new Text(String.format("- [![f!](https://img.shields.io/static/v1?label=%s&message=%s()&color=orange&style=flat-square)]()",mid.clazzName,mid.methodName)))
               .append(new Text("<details><summary>Call Stack</summary>"))
               .append(new Text(v.generateCallTraceMarkdown()))
-              .append("</details>")
-              .append(new Text("<details><summary>Changelog</summary></details>"))
+              .append(new Text("</details>"))
+              .append(new Text("<details><summary>Diff</summary>"))
+              .append(new Text(v.generateChangeLogMarkdown()))
+              .append(new Text("</details>"))
               .append("\n");
         });
 
