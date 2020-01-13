@@ -22,10 +22,11 @@ import gumtree.spoon.builder.SpoonGumTreeBuilder;
 import gumtree.spoon.diff.operations.MoveOperation;
 import gumtree.spoon.diff.operations.Operation;
 import gumtree.spoon.diff.operations.UpdateOperation;
-import net.steppschuh.markdowngenerator.text.emphasis.BoldText;
+import spoon.reflect.code.CtBlock;
 import spoon.reflect.code.CtStatement;
 import spoon.reflect.cu.position.NoSourcePosition;
 import spoon.reflect.declaration.CtElement;
+import spoon.reflect.declaration.CtExecutable;
 
 import java.util.List;
 import java.util.Map;
@@ -81,30 +82,20 @@ public final class ResultData {
 
           if (src.equals(dst)) {
             report.append(
-                "[![f!](https://img.shields.io/badge/modified-green?style=flat-square)]()");
-            int dNum = method.srcNumOfStmts - method.dstNumOfStmts;
-            if (dNum > 0) {
-              report.append(String.format(
-                  "[![f!](https://img.shields.io/badge/+%d-statements-blue?style=flat-square)]()",
-                  dNum));
-            } else if (dNum < 0) {
-              report.append(String.format(
-                  "[![f!](https://img.shields.io/badge/-%d-statements-blue?style=flat-square)]()",
-                  dNum));
-            } else {
-              report.append(
-                  "[![f!](https://img.shields.io/badge/&#177;0-statements-blue?style=flat-square)]()");
-            }
+                "[![f!](https://img.shields.io/badge/modified-orange?style=flat-square)]()");
           } else {
             report.append(
                 "[![f!](https://img.shields.io/badge/moved-blue?style=flat-square)]()");
-            report.append(String.format(
-                "[![f!](https://img.shields.io/badge/&#187;-%s-blue?style=flat-square)]()",
-                method.dstMethod.get().getSignature()));
           }
         } else {
-          report.append("[![f!](https://img.shields.io/badge/deleted-red)]()");
+          report.append(
+              "[![f!](https://img.shields.io/badge/deleted-red?style=flat-square)]()");
         }
+
+        int dNum = changes.size();
+        report.append(String.format(
+            "[![f!](https://img.shields.io/badge/%d-changes-informational?style=flat-square)]()",
+            dNum));
 
         ///
         // Generate info about changes
@@ -120,36 +111,73 @@ public final class ResultData {
           var el = new StringBuilder(
               op.getAction().getClass().getSimpleName() + " " + type);
 
-          var parent = op.getNode().getParent(e -> e instanceof CtStatement)
-              .getClass().getSimpleName();
-          var parType = parent.substring(2, parent.length() - 4);
+          var parent = op.getNode();
+
+          if (op.getNode() instanceof CtExecutable) {
+            parent = op.getNode();
+          } else if (op.getNode().getParent() instanceof CtExecutable) {
+            parent = op.getNode().getParent();
+          } else {
+            parent = op.getNode().getParent(
+                e -> (e instanceof CtStatement || e instanceof CtExecutable));
+          }
+
+          if (parent instanceof CtBlock) {
+            parent = parent.getParent(
+                e -> (e instanceof CtStatement || e instanceof CtExecutable));
+          }
+
+          var parType = parent.getClass().getSimpleName()
+              .substring(2, parent.getClass().getSimpleName().length() - 4);
           el.append(" in " + parType);
           if (op.getNode().getPosition() != null && !(op.getNode()
               .getPosition() instanceof NoSourcePosition)) {
             el.append(" (L" + op.getNode().getPosition().getLine() + ")");
           }
+
           if (op instanceof UpdateOperation || op instanceof MoveOperation) {
             var elementDest = (CtElement) op.getAction().getNode()
                 .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT_DEST);
 
-            var parDst = elementDest.getParent(e -> e instanceof CtStatement)
-                .getClass().getSimpleName();
-            var parDstType = parDst.substring(2, parDst.length() - 4);
+            var parDst = elementDest;
+
+            if (elementDest instanceof CtExecutable) {
+              parDst = elementDest;
+            } else if (elementDest.getParent() instanceof CtExecutable) {
+              parDst = elementDest.getParent();
+            } else {
+
+              parDst = elementDest.getParent(
+                  e -> (e instanceof CtStatement || e instanceof CtExecutable));
+            }
+
+            if (parDst instanceof CtBlock) {
+              parDst = parDst.getParent(
+                  e -> (e instanceof CtStatement || e instanceof CtExecutable));
+            }
+
+            var parDstType = parDst.getClass().getSimpleName()
+                .substring(2, parDst.getClass().getSimpleName().length() - 4);
             el.append(" to " + parDstType);
 
             if (elementDest.getPosition() != null && !(elementDest
                 .getPosition() instanceof NoSourcePosition)) {
               el.append(" (L" + elementDest.getPosition().getLine() + ")");
             }
-
           }
 
+//          if(op.getNode().toString().split("\n").length < 2){
+//            el.append("<code><pre>" + op.getNode().toString(). + "</pre></code>");
+//          }
+
           report.append(String.format("<li>%s</li>", el.toString()));
-        }); report.append("</ul>");
+        });
+        report.append("</ul>");
 
       });
 
-    } return report.toString();
+    }
+    return report.toString();
 
   }
 

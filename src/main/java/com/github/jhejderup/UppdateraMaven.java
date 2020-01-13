@@ -141,13 +141,20 @@ public class UppdateraMaven {
         .filter(entry -> entry.getValue().path.size() > 0).count();
 
 
+    //
+    // If no affected functions, we exit!
+    //
+    if (numAffectedFunctions < 1){
+      System.exit(52);
+    }
+
     /// Starting paragraph
     var report = new StringBuilder().append(new Text(String
         .format("Bumps %s from %s to %s. ",
             oldCoord.groupId + ":" + oldCoord.artifactId, oldCoord.version,
             newCoord.version))).append(new BoldText(String.format(
         "This update introduces changes in %d existing functions: %d of those functions are called by this project and has the risk of creating potential regression errors.",
-        totalChangedFunctions, numAffectedFunctions))).append("\n\n").append(
+        totalChangedFunctions, numAffectedFunctions))).append(new Text(" We advice you to review these changes before merging the pull request")).append("\n\n").append(
         new Text(String.format(
             "Below includes a changelog for the %d affected functions along with a callstack:",
             numAffectedFunctions))).append("\n").append(new Text("<details>"))
@@ -162,8 +169,10 @@ public class UppdateraMaven {
         .map(entry -> entry.getValue())
         .forEach(v -> {
           var mid = v.methodID;
+
+
           report
-              .append(new Text(String.format("- [![f!](https://img.shields.io/static/v1?label=%s&message=%s()&color=orange&style=flat-square)]()",mid.clazzName,mid.methodName)))
+              .append(new Text(String.format("- [![f!](https://img.shields.io/static/v1?label=%s&message=%s()&color=informational&style=flat-square)]()[![f!](https://img.shields.io/badge/-%s:L%s-inactive?style=flat-square)]()", mid.clazzName.substring(1).replace("/","."),mid.methodName,mid.method.get().getPosition().getFile().getName(),mid.method.get().getPosition().getLine())))
               .append(new Text("<details><summary>Call Stack</summary>"))
               .append(new Text(v.generateCallTraceMarkdown()))
               .append(new Text("</details>"))
@@ -185,7 +194,7 @@ public class UppdateraMaven {
 
     report.append(new Text("<details>"));
     report.append(new Text("<summary>Want to help us or have suggestions?</summary>")).append("\n\n");
-    report.append(new Text("We are a group of researchers trying to make automated dependency services more useful and user-friendly for developers. If you have feedback and questions of this, feel free to submit it [here](https://docs.google.com/forms/d/e/1FAIpQLScgYhqcCGeRjRMqErM3d8BDkDq2ASjAP5pP6EfYamQWYbSTiA/viewform?entry.1269199518=).")).append("\n\n");
+    report.append(new Text("We are a group of researchers trying to make automated dependency services more useful and user-friendly for developers. If you have feedback and questions about this, feel free to submit it [here](https://docs.google.com/forms/d/e/1FAIpQLScgYhqcCGeRjRMqErM3d8BDkDq2ASjAP5pP6EfYamQWYbSTiA/viewform?entry.1269199518=).")).append("\n\n");
     report.append(new Text("</details>"));
 
     try (var out = new PrintWriter("report.md")) {

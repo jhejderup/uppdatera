@@ -123,16 +123,20 @@ public final class MethodDiff {
 
       var srcStmts = 0;
       try {
-        srcStmts = ((CtExecutable) srcMethod).getBody().getElements(el -> el instanceof CtStatement).size();
-      }catch (Exception e){
-        logger.error("No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
+        srcStmts = ((CtExecutable) srcMethod).getBody()
+            .getElements(el -> el instanceof CtStatement).size();
+      } catch (Exception e) {
+        logger.error(
+            "No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
       }
 
       var dstStmts = 0;
       try {
-        dstStmts = ((CtExecutable) srcMethod).getBody().getElements(el -> el instanceof CtStatement).size();
-      }catch (Exception e){
-        logger.error("No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
+        dstStmts = ((CtExecutable) srcMethod).getBody()
+            .getElements(el -> el instanceof CtStatement).size();
+      } catch (Exception e) {
+        logger.error(
+            "No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
       }
 
       var ms = new MethodStats(srcStmts, dstStmts,
@@ -165,9 +169,11 @@ public final class MethodDiff {
         // mapped in the new version!
         var srcStmts = 0;
         try {
-           srcStmts = ((CtExecutable) srcMethod).getBody().getElements(el -> el instanceof CtStatement).size();
-        }catch (Exception e){
-          logger.error("No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
+          srcStmts = ((CtExecutable) srcMethod).getBody()
+              .getElements(el -> el instanceof CtStatement).size();
+        } catch (Exception e) {
+          logger.error(
+              "No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
         }
 
         var ms = new MethodStats(srcStmts, 0, Optional
@@ -183,16 +189,20 @@ public final class MethodDiff {
       // stats
       var srcStmts = 0;
       try {
-        srcStmts = ((CtExecutable) srcMethod).getBody().getElements(el -> el instanceof CtStatement).size();
-      }catch (Exception e){
-        logger.error("No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
+        srcStmts = ((CtExecutable) srcMethod).getBody()
+            .getElements(el -> el instanceof CtStatement).size();
+      } catch (Exception e) {
+        logger.error(
+            "No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
       }
 
       var dstStmts = 0;
       try {
-        dstStmts = ((CtExecutable) srcMethod).getBody().getElements(el -> el instanceof CtStatement).size();
-      }catch (Exception e){
-        logger.error("No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
+        dstStmts = ((CtExecutable) srcMethod).getBody()
+            .getElements(el -> el instanceof CtStatement).size();
+      } catch (Exception e) {
+        logger.error(
+            "No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
       }
 
       var ms = new MethodStats(srcStmts, dstStmts,
@@ -236,15 +246,19 @@ public final class MethodDiff {
       // stats
       var srcStmts = 0;
       try {
-        srcStmts = ((CtExecutable) srcMethod).getBody().getElements(el -> el instanceof CtStatement).size();
-      }catch (Exception e){
-        logger.error("No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
+        srcStmts = ((CtExecutable) srcMethod).getBody()
+            .getElements(el -> el instanceof CtStatement).size();
+      } catch (Exception e) {
+        logger.info(
+            "No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
       }
       var dstStmts = 0;
       try {
-        dstStmts = ((CtExecutable) srcMethod).getBody().getElements(el -> el instanceof CtStatement).size();
-      }catch (Exception e){
-        logger.error("No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
+        dstStmts = ((CtExecutable) srcMethod).getBody()
+            .getElements(el -> el instanceof CtStatement).size();
+      } catch (Exception e) {
+        logger.info(
+            "No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
       }
 
       var ms = new MethodStats(srcStmts, dstStmts,

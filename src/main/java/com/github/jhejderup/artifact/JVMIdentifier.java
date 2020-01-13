@@ -6,10 +6,7 @@ import spoon.reflect.declaration.CtType;
 import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.reference.CtTypeReference;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -31,11 +28,13 @@ public final class JVMIdentifier {
 
   public final String clazzName;
   public final String methodName;
-  public final String methodDesc;
-  public JVMIdentifier(String clazzName, String methodName, String methodDesc) {
+  public final String                 methodDesc;
+  public final Optional<CtExecutable> method;
+  public JVMIdentifier(String clazzName, String methodName, String methodDesc, Optional<CtExecutable> method) {
     this.clazzName = clazzName;
     this.methodName = methodName.replace("<","&lt;").replace(">","&gt;");
     this.methodDesc = methodDesc;
+    this.method = method;
   }
 
   public static JVMIdentifier SpoonToJVMString(CtExecutable item) {
@@ -46,7 +45,7 @@ public final class JVMIdentifier {
         .collect(Collectors.joining(""));
 
     return new JVMIdentifier(toJVMType(clazz, false), item.getSimpleName(),
-        "(" + args + ")" + toJVMType(ret, true));
+        "(" + args + ")" + toJVMType(ret, true), Optional.of(item));
 
   }
 
@@ -73,6 +72,8 @@ public final class JVMIdentifier {
     return String
         .format("%s%s", this.methodName, this.methodDesc);
   }
+
+
 
   @Override
   public String toString() {

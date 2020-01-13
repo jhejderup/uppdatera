@@ -63,7 +63,7 @@ public final class Reachability {
 
   private static JVMIdentifier WALAToJVMIdentifier(MethodReference ref) {
     return new JVMIdentifier(ref.getDeclaringClass().getName().toString(),
-        ref.getName().toString(), ref.getDescriptor().toString());
+        ref.getName().toString(), ref.getDescriptor().toString(),Optional.empty());
   }
 
   public static ClassLoaderReference getClassLoader(MethodReference m) {
