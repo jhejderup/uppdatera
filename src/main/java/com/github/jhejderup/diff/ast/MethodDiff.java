@@ -121,10 +121,19 @@ public final class MethodDiff {
       var srcMethod = (CtElement) srcMethodTree
           .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
 
-      var srcStmts = ((CtExecutable) srcMethod).getBody()
-          .getElements(el -> el instanceof CtStatement).size();
-      var dstStmts = ((CtExecutable) dstMethod).getBody()
-          .getElements(el -> el instanceof CtStatement).size();
+      var srcStmts = 0;
+      try {
+        srcStmts = ((CtExecutable) srcMethod).getBody().getElements(el -> el instanceof CtStatement).size();
+      }catch (Exception e){
+        logger.error("No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
+      }
+
+      var dstStmts = 0;
+      try {
+        dstStmts = ((CtExecutable) srcMethod).getBody().getElements(el -> el instanceof CtStatement).size();
+      }catch (Exception e){
+        logger.error("No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
+      }
 
       var ms = new MethodStats(srcStmts, dstStmts,
           Optional.of(JVMIdentifier.SpoonToJVMString((CtExecutable) srcMethod)),
@@ -154,8 +163,12 @@ public final class MethodDiff {
       if (!mapping.hasSrc(srcMethodTree)) {
         // this implies that the function is also deleted and hence not
         // mapped in the new version!
-        var srcStmts = ((CtExecutable) srcMethod).getBody()
-            .getElements(el -> el instanceof CtStatement).size();
+        var srcStmts = 0;
+        try {
+           srcStmts = ((CtExecutable) srcMethod).getBody().getElements(el -> el instanceof CtStatement).size();
+        }catch (Exception e){
+          logger.error("No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
+        }
 
         var ms = new MethodStats(srcStmts, 0, Optional
             .of(JVMIdentifier.SpoonToJVMString((CtExecutable) srcMethod)),
@@ -168,10 +181,19 @@ public final class MethodDiff {
           .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
 
       // stats
-      var srcStmts = ((CtExecutable) srcMethod).getBody()
-          .getElements(el -> el instanceof CtStatement).size();
-      var dstStmts = ((CtExecutable) dstMethod).getBody()
-          .getElements(el -> el instanceof CtStatement).size();
+      var srcStmts = 0;
+      try {
+        srcStmts = ((CtExecutable) srcMethod).getBody().getElements(el -> el instanceof CtStatement).size();
+      }catch (Exception e){
+        logger.error("No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
+      }
+
+      var dstStmts = 0;
+      try {
+        dstStmts = ((CtExecutable) srcMethod).getBody().getElements(el -> el instanceof CtStatement).size();
+      }catch (Exception e){
+        logger.error("No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
+      }
 
       var ms = new MethodStats(srcStmts, dstStmts,
           Optional.of(JVMIdentifier.SpoonToJVMString((CtExecutable) srcMethod)),
@@ -212,10 +234,18 @@ public final class MethodDiff {
           .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
 
       // stats
-      var srcStmts = ((CtExecutable) srcMethod).getBody()
-          .getElements(el -> el instanceof CtStatement).size();
-      var dstStmts = ((CtExecutable) dstMethod).getBody()
-          .getElements(el -> el instanceof CtStatement).size();
+      var srcStmts = 0;
+      try {
+        srcStmts = ((CtExecutable) srcMethod).getBody().getElements(el -> el instanceof CtStatement).size();
+      }catch (Exception e){
+        logger.error("No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
+      }
+      var dstStmts = 0;
+      try {
+        dstStmts = ((CtExecutable) srcMethod).getBody().getElements(el -> el instanceof CtStatement).size();
+      }catch (Exception e){
+        logger.error("No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
+      }
 
       var ms = new MethodStats(srcStmts, dstStmts,
           Optional.of(JVMIdentifier.SpoonToJVMString((CtExecutable) srcMethod)),

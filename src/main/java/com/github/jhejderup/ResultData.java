@@ -22,6 +22,7 @@ import gumtree.spoon.builder.SpoonGumTreeBuilder;
 import gumtree.spoon.diff.operations.MoveOperation;
 import gumtree.spoon.diff.operations.Operation;
 import gumtree.spoon.diff.operations.UpdateOperation;
+import net.steppschuh.markdowngenerator.text.emphasis.BoldText;
 import spoon.reflect.code.CtStatement;
 import spoon.reflect.cu.position.NoSourcePosition;
 import spoon.reflect.declaration.CtElement;
@@ -102,7 +103,7 @@ public final class ResultData {
                 method.dstMethod.get().getSignature()));
           }
         } else {
-          report.append("[![f!](https://imsg.shields.io/badge/deleted-red)]()");
+          report.append("[![f!](https://img.shields.io/badge/deleted-red)]()");
         }
 
         ///

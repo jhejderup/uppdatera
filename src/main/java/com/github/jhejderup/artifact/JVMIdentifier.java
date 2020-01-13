@@ -34,7 +34,7 @@ public final class JVMIdentifier {
   public final String methodDesc;
   public JVMIdentifier(String clazzName, String methodName, String methodDesc) {
     this.clazzName = clazzName;
-    this.methodName = methodName;
+    this.methodName = methodName.replace("<","&lt;").replace(">","&gt;");
     this.methodDesc = methodDesc;
   }
 

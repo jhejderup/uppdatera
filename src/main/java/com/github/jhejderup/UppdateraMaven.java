@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
@@ -75,14 +76,14 @@ public class UppdateraMaven {
         logger.error("[Uppdatera] Unable to  download source for  " + newCoord);
       if (!oldJar.isPresent())
         logger.error("[Uppdatera] Unable to download jar file for " + oldCoord);
-      return;
+      System.exit(50);
     }
 
     var filenameOldJar = oldJar.get().getFileName().toString();
     if (!clpathDepz.contains(filenameOldJar)) {
       logger.error("[Uppdatera] `" + filenameOldJar
           + "` is not in the dep classpath of `" + clpathDepz + "`");
-      return;
+      System.exit(51);
     }
 
     ///
@@ -176,7 +177,7 @@ public class UppdateraMaven {
     report
         .append(new Text("</p>")).append("\n\n")
         .append(new Text("</details>")).append("\n")
-        .append("<hr>");
+        .append("<hr>").append("\n\n");
 
     /// survey
 
@@ -184,9 +185,12 @@ public class UppdateraMaven {
 
     report.append(new Text("<details>"));
     report.append(new Text("<summary>Want to help us or have suggestions?</summary>")).append("\n\n");
-    report.append(new Text("We are a group of researchers trying to make automated dependency services more useful and user-friendly for developers. If you have feedback and questions of this, feel free to submit it [here]().")).append("\n\n");
+    report.append(new Text("We are a group of researchers trying to make automated dependency services more useful and user-friendly for developers. If you have feedback and questions of this, feel free to submit it [here](https://docs.google.com/forms/d/e/1FAIpQLScgYhqcCGeRjRMqErM3d8BDkDq2ASjAP5pP6EfYamQWYbSTiA/viewform?entry.1269199518=).")).append("\n\n");
     report.append(new Text("</details>"));
-    System.out.println(report);
+
+    try (var out = new PrintWriter("report.md")) {
+      out.println(report);
+    }
 
   }
 
