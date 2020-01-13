@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class UppdateraMaven {
@@ -140,13 +141,18 @@ public class UppdateraMaven {
         .flatMap(md -> md.entrySet().stream())
         .filter(entry -> entry.getValue().path.size() > 0).count();
 
-
     //
     // If no affected functions, we exit!
     //
-    if (numAffectedFunctions < 1){
+    if (numAffectedFunctions < 1) {
       System.exit(52);
     }
+
+    var affected = result.stream().flatMap(md -> md.entrySet().stream())
+        .filter(entry -> entry.getValue().path.size() > 0).map(entry -> {
+          var callstack = entry.getValue().path;
+          return callstack.get(callstack.size() - 1);
+        }).collect(Collectors.groupingBy(Function.identity()));
 
     /// Starting paragraph
     var report = new StringBuilder().append(new Text(String
@@ -154,47 +160,72 @@ public class UppdateraMaven {
             oldCoord.groupId + ":" + oldCoord.artifactId, oldCoord.version,
             newCoord.version))).append(new BoldText(String.format(
         "This update introduces changes in %d existing functions: %d of those functions are called by this project and has the risk of creating potential regression errors.",
-        totalChangedFunctions, numAffectedFunctions))).append(new Text(" We advice you to review these changes before merging the pull request")).append("\n\n").append(
-        new Text(String.format(
+        totalChangedFunctions, numAffectedFunctions))).append(new Text(
+        " We advice you to review these changes before merging the pull request"))
+        .append("\n\n").append(new Text(String.format(
             "Below includes a changelog for the %d affected functions along with a callstack:",
             numAffectedFunctions))).append("\n").append(new Text("<details>"))
-        .append("\n")
+        .append("\n").append(new Text("<summary>Affected Project Functions</summary>"))
+        .append("\n").append(new Text("<p>")).append("\n\n");
+
+    /// Affected functions
+
+    affected.entrySet().stream().forEach(e -> {
+
+      var percentage = (float)(e.getValue().size() / numAffectedFunctions) * 100;
+      report.append(String.format("- %s", String.format(
+          "[![f!](https://img.shields.io/static/v1?label=%s&message=%s()&color=informational&style=flat-square)]()[![f!](https://img.shields.io/static/v1?label=changes&message=%s&#37;&color=critical&style=flat-square)]()",
+          e.getKey().clazzName.substring(1).replace("/", "."),
+          e.getKey().methodName,percentage, e.getValue().size(), numAffectedFunctions)));
+
+    });
+
+    /// Ending paragraph
+    report.append(new Text("</p>")).append("\n\n")
+        .append(new Text("</details>")).append("\n\n");
+
+    //Start new section
+    report.append(new Text("<details>")).append("\n")
         .append(new Text("<summary>Changelog</summary>")).append("\n")
         .append(new Text("<p>")).append("\n\n");
-
 
     /// Each method
     result.stream().flatMap(md -> md.entrySet().stream())
         .filter(entry -> entry.getValue().path.size() > 0)
-        .map(entry -> entry.getValue())
-        .forEach(v -> {
-          var mid = v.methodID;
+        .map(entry -> entry.getValue()).forEach(v -> {
+      var mid = v.methodID;
 
-
-          report
-              .append(new Text(String.format("- [![f!](https://img.shields.io/static/v1?label=%s&message=%s()&color=informational&style=flat-square)]()[![f!](https://img.shields.io/badge/-%s:L%s-inactive?style=flat-square)]()", mid.clazzName.substring(1).replace("/","."),mid.methodName,mid.method.get().getPosition().getFile().getName(),mid.method.get().getPosition().getLine())))
-              .append(new Text("<details><summary>Call Stack</summary>"))
-              .append(new Text(v.generateCallTraceMarkdown()))
-              .append(new Text("</details>"))
-              .append(new Text("<details><summary>Diff</summary>"))
-              .append(new Text(v.generateChangeLogMarkdown()))
-              .append(new Text("</details>"))
-              .append("\n");
-        });
+      report.append(new Text(String.format(
+          "- [![f!](https://img.shields.io/static/v1?label=%s&message=%s()&color=informational&style=flat-square)]()[![f!](https://img.shields.io/badge/-%s:L%s-inactive?style=flat-square)]()",
+          mid.clazzName.substring(1).replace("/", "."), mid.methodName,
+          mid.method.get().getPosition().getFile().getName(),
+          mid.method.get().getPosition().getLine())))
+          .append(new Text("<details><summary>Call Stack</summary>"))
+          .append(new Text(v.generateCallTraceMarkdown()))
+          .append(new Text("</details>"))
+          .append(new Text("<details><summary>Diff</summary>"))
+          .append(new Text(v.generateChangeLogMarkdown()))
+          .append(new Text("</details>")).append("\n");
+    });
 
     /// Ending paragraph
-    report
-        .append(new Text("</p>")).append("\n\n")
-        .append(new Text("</details>")).append("\n")
-        .append("<hr>").append("\n\n");
+    report.append(new Text("</p>")).append("\n\n")
+        .append(new Text("</details>")).append("\n").append("<hr>")
+        .append("\n\n");
 
     /// survey
 
-    report.append(new Text("Did Uppdatera do a good job?  Give this issue a :+1: if it is **useful**, :-1: if it is **not**, and :hand: if **neutral**. ")).append("\n\n");
+    report.append(new Text(
+        "Did Uppdatera do a good job?  Give this issue a :+1: if it is **useful**, :-1: if it is **not**, and :hand: if **neutral**. "))
+        .append("\n\n");
 
     report.append(new Text("<details>"));
-    report.append(new Text("<summary>Want to help us or have suggestions?</summary>")).append("\n\n");
-    report.append(new Text("We are a group of researchers trying to make automated dependency services more useful and user-friendly for developers. If you have feedback and questions about this, feel free to submit it [here](https://docs.google.com/forms/d/e/1FAIpQLScgYhqcCGeRjRMqErM3d8BDkDq2ASjAP5pP6EfYamQWYbSTiA/viewform?entry.1269199518=).")).append("\n\n");
+    report.append(
+        new Text("<summary>Want to help us or have suggestions?</summary>"))
+        .append("\n\n");
+    report.append(new Text(
+        "We are a group of researchers trying to make automated dependency services more useful and user-friendly for developers. If you have feedback and questions about this, feel free to submit it [here](https://docs.google.com/forms/d/e/1FAIpQLScgYhqcCGeRjRMqErM3d8BDkDq2ASjAP5pP6EfYamQWYbSTiA/viewform?entry.1269199518=)."))
+        .append("\n\n");
     report.append(new Text("</details>"));
 
     try (var out = new PrintWriter("report.md")) {
