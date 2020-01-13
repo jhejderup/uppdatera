@@ -159,24 +159,29 @@ public class UppdateraMaven {
         .format("Bumps %s from %s to %s. ",
             oldCoord.groupId + ":" + oldCoord.artifactId, oldCoord.version,
             newCoord.version))).append(new BoldText(String.format(
-        "This update introduces changes in %d existing functions: %d of those functions are called by " + affectedStats.keySet().size()+ " function(s) in this project and has the risk of creating potential regression errors.",
+        "This update introduces changes in %d existing functions: %d of those functions are called by "
+            + affectedStats.keySet().size()
+            + " function(s) in this project and has the risk of creating potential regression errors.",
         totalChangedFunctions, numAffectedFunctions))).append(new Text(
         " We advice you to review these changes before merging the pull request"))
         .append("\n\n").append(new Text(String.format(
             "Below includes a changelog for the %d affected functions along with a callstack:",
             numAffectedFunctions))).append("\n").append(new Text("<details>"))
-        .append("\n").append(new Text("<summary>Affected Project Functions</summary>"))
+        .append("\n")
+        .append(new Text("<summary>Affected Project Functions</summary>"))
         .append("\n").append(new Text("<p>")).append("\n\n");
 
     /// Affected functions
 
     affectedStats.entrySet().stream().forEach(e -> {
 
-      var percentage = (float)(e.getValue().size() / numAffectedFunctions) * 100;
+      var percentage =
+          (float) (e.getValue().size() / numAffectedFunctions) * 100;
       report.append(String.format("- %s", String.format(
           "[![f!](https://img.shields.io/static/v1?label=%s&message=%s()&color=informational&style=flat-square)]()[![f!](https://img.shields.io/static/v1?label=changes&message=%s&#37;&color=critical&style=flat-square)]()",
           e.getKey().clazzName.substring(1).replace("/", "."),
-          e.getKey().methodName,percentage, e.getValue().size(), numAffectedFunctions)));
+          e.getKey().methodName, percentage, e.getValue().size(),
+          numAffectedFunctions)));
 
     });
 
@@ -184,10 +189,10 @@ public class UppdateraMaven {
     report.append(new Text("</p>")).append("\n\n")
         .append(new Text("</details>")).append("\n\n");
 
-    //Start new section
+    //Change log
     report.append(new Text("<details>")).append("\n")
-        .append(new Text("<summary>Dependency Changelog</summary>")).append("\n")
-        .append(new Text("<p>")).append("\n\n");
+        .append(new Text("<summary>Dependency Changelog</summary>"))
+        .append("\n").append(new Text("<p>")).append("\n\n");
 
     /// Each method
     result.stream().flatMap(md -> md.entrySet().stream())
@@ -216,7 +221,7 @@ public class UppdateraMaven {
     /// survey
 
     report.append(new Text(
-        "Did Uppdatera do a good job?  Give this issue a :+1: if it is **useful**, :-1: if it is **not**, and :hand: if **neutral**. "))
+        "Did you find information useful?  Give this issue a :+1: if it is **useful**, :-1: if it is **not**, and :hand: if **neutral**. "))
         .append("\n\n");
 
     report.append(new Text("<details>"));
@@ -224,7 +229,7 @@ public class UppdateraMaven {
         new Text("<summary>Want to help us or have suggestions?</summary>"))
         .append("\n\n");
     report.append(new Text(
-        "We are a group of researchers trying to make automated dependency services more useful and user-friendly for developers. If you have feedback and questions about this, feel free to submit it [here](https://docs.google.com/forms/d/e/1FAIpQLScgYhqcCGeRjRMqErM3d8BDkDq2ASjAP5pP6EfYamQWYbSTiA/viewform?entry.1269199518=)."))
+        "We are a group of researchers from Delft University of Technology trying to make automated dependency services more useful and user-friendly for developers. If you have feedback and questions about this, feel free to submit it [here](https://docs.google.com/forms/d/e/1FAIpQLScgYhqcCGeRjRMqErM3d8BDkDq2ASjAP5pP6EfYamQWYbSTiA/viewform?entry.1269199518=)."))
         .append("\n\n");
     report.append(new Text("</details>"));
 

@@ -44,24 +44,22 @@ public final class ResultData {
     this.changeSet = changeSet;
   }
 
-  public String generateCallTrace() {
-    if (path.size() > 0) {
-
-      var calltrace = new StringBuilder(
-          this.path.get(0).clazzName.substring(1).replace("/", ".") + "."
-              + this.path.get(0).methodName + "\n");
-
-      for (int i = 1; i < this.path.size() - 1; i++) {
-
-        calltrace.append(
-            "\tat: " + this.path.get(i).clazzName.substring(1).replace("/", ".")
-                + "." + this.path.get(i).methodName + "\n");
-      }
-      return calltrace.toString();
-
+  private CtElement getExecutableParentNode(CtElement child) {
+    var parent = child;
+    if (child instanceof CtExecutable) { //is it a method kind?
+      return parent;
     } else {
-      return "";
+      parent = child.getParent(
+          e -> (e instanceof CtStatement || e instanceof CtExecutable));
     }
+
+    // is it a Block? get the parent of that (e.g., IF/SWITCH/FOR ETC)
+    if (parent instanceof CtBlock) {
+      parent = parent.getParent(
+          e -> (e instanceof CtStatement || e instanceof CtExecutable));
+    }
+    return parent;
+
   }
 
   public String generateChangeLogMarkdown() {
@@ -111,25 +109,14 @@ public final class ResultData {
           var el = new StringBuilder(
               op.getAction().getClass().getSimpleName() + " " + type);
 
-          var parent = op.getNode();
+          var parent = getExecutableParentNode(op.getNode());
+          var parType = parent.getClass().getSimpleName();
 
-          if (op.getNode() instanceof CtExecutable) {
-            parent = op.getNode();
-          } else if (op.getNode().getParent() instanceof CtExecutable) {
-            parent = op.getNode().getParent();
-          } else {
-            parent = op.getNode().getParent(
-                e -> (e instanceof CtStatement || e instanceof CtExecutable));
-          }
+          var parentName = parType.substring(2, parType.length() - 4);
 
-          if (parent instanceof CtBlock) {
-            parent = parent.getParent(
-                e -> (e instanceof CtStatement || e instanceof CtExecutable));
-          }
+          el.append(" in " + parentName);
 
-          var parType = parent.getClass().getSimpleName()
-              .substring(2, parent.getClass().getSimpleName().length() - 4);
-          el.append(" in " + parType);
+          //get line number
           if (op.getNode().getPosition() != null && !(op.getNode()
               .getPosition() instanceof NoSourcePosition)) {
             el.append(" (L" + op.getNode().getPosition().getLine() + ")");
@@ -139,36 +126,23 @@ public final class ResultData {
             var elementDest = (CtElement) op.getAction().getNode()
                 .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT_DEST);
 
-            var parDst = elementDest;
+            var parDst = getExecutableParentNode(elementDest);
 
-            if (elementDest instanceof CtExecutable) {
-              parDst = elementDest;
-            } else if (elementDest.getParent() instanceof CtExecutable) {
-              parDst = elementDest.getParent();
-            } else {
+            var parDstType = parDst.getClass().getSimpleName();
 
-              parDst = elementDest.getParent(
-                  e -> (e instanceof CtStatement || e instanceof CtExecutable));
-            }
+            var parDstName = parDstType.substring(2, parDstType.length() - 4);
+            el.append(" to " + parDstName);
 
-            if (parDst instanceof CtBlock) {
-              parDst = parDst.getParent(
-                  e -> (e instanceof CtStatement || e instanceof CtExecutable));
-            }
-
-            var parDstType = parDst.getClass().getSimpleName()
-                .substring(2, parDst.getClass().getSimpleName().length() - 4);
-            el.append(" to " + parDstType);
-
+            //get line number
             if (elementDest.getPosition() != null && !(elementDest
                 .getPosition() instanceof NoSourcePosition)) {
               el.append(" (L" + elementDest.getPosition().getLine() + ")");
             }
           }
 
-//          if(op.getNode().toString().split("\n").length < 2){
-//            el.append("<code><pre>" + op.getNode().toString(). + "</pre></code>");
-//          }
+          //          if(op.getNode().toString().split("\n").length < 2){
+          //            el.append("<code><pre>" + op.getNode().toString(). + "</pre></code>");
+          //          }
 
           report.append(String.format("<li>%s</li>", el.toString()));
         });

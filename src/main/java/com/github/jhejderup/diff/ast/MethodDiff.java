@@ -27,8 +27,9 @@ import gumtree.spoon.diff.Diff;
 import gumtree.spoon.diff.operations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spoon.reflect.code.CtStatement;
-import spoon.reflect.declaration.*;
+import spoon.reflect.declaration.CtElement;
+import spoon.reflect.declaration.CtExecutable;
+import spoon.reflect.declaration.CtPackage;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -46,7 +47,7 @@ public final class MethodDiff {
   }
 
   public static boolean isMethodKind(CtElement el) {
-    return el instanceof CtMethod || el instanceof CtConstructor;
+    return el instanceof CtExecutable;
   }
 
   private static boolean isChangeInMethod(Operation op) {
@@ -67,19 +68,24 @@ public final class MethodDiff {
 
   private static Optional<CtElement> getTopLevelMethod(CtElement node) {
 
+    //1. check if the node is a method kind
     if (isMethodKind(node)) {
       return Optional.of(node);
     }
+    //2. find the parent node that is a method
     var parent = node.getParent();
     var stack = new Stack<CtElement>();
 
+    //3. traverse to the top of the tree
     while (parent != null && !(parent instanceof CtPackage) && node != parent) {
       stack.push(parent);
       parent = parent.getParent();
     }
 
+    //4. pop the stack until we find our top-level method
     while (stack.size() > 0) {
       var el = stack.pop();
+
       if (isMethodKind(el)) {
         return Optional.of(el);
       }
@@ -121,25 +127,7 @@ public final class MethodDiff {
       var srcMethod = (CtElement) srcMethodTree
           .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
 
-      var srcStmts = 0;
-      try {
-        srcStmts = ((CtExecutable) srcMethod).getBody()
-            .getElements(el -> el instanceof CtStatement).size();
-      } catch (Exception e) {
-        logger.error(
-            "No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
-      }
-
-      var dstStmts = 0;
-      try {
-        dstStmts = ((CtExecutable) srcMethod).getBody()
-            .getElements(el -> el instanceof CtStatement).size();
-      } catch (Exception e) {
-        logger.error(
-            "No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
-      }
-
-      var ms = new MethodStats(srcStmts, dstStmts,
+      var ms = new MethodStats(
           Optional.of(JVMIdentifier.SpoonToJVMString((CtExecutable) srcMethod)),
           Optional
               .of(JVMIdentifier.SpoonToJVMString((CtExecutable) dstMethod)));
@@ -167,16 +155,8 @@ public final class MethodDiff {
       if (!mapping.hasSrc(srcMethodTree)) {
         // this implies that the function is also deleted and hence not
         // mapped in the new version!
-        var srcStmts = 0;
-        try {
-          srcStmts = ((CtExecutable) srcMethod).getBody()
-              .getElements(el -> el instanceof CtStatement).size();
-        } catch (Exception e) {
-          logger.error(
-              "No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
-        }
 
-        var ms = new MethodStats(srcStmts, 0, Optional
+        var ms = new MethodStats(Optional
             .of(JVMIdentifier.SpoonToJVMString((CtExecutable) srcMethod)),
             Optional.empty());
         return new MethodChange(op, ms);
@@ -186,26 +166,7 @@ public final class MethodDiff {
       var dstMethod = (CtElement) dstMethodTree
           .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
 
-      // stats
-      var srcStmts = 0;
-      try {
-        srcStmts = ((CtExecutable) srcMethod).getBody()
-            .getElements(el -> el instanceof CtStatement).size();
-      } catch (Exception e) {
-        logger.error(
-            "No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
-      }
-
-      var dstStmts = 0;
-      try {
-        dstStmts = ((CtExecutable) srcMethod).getBody()
-            .getElements(el -> el instanceof CtStatement).size();
-      } catch (Exception e) {
-        logger.error(
-            "No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
-      }
-
-      var ms = new MethodStats(srcStmts, dstStmts,
+      var ms = new MethodStats(
           Optional.of(JVMIdentifier.SpoonToJVMString((CtExecutable) srcMethod)),
           Optional
               .of(JVMIdentifier.SpoonToJVMString((CtExecutable) dstMethod)));
@@ -243,25 +204,7 @@ public final class MethodDiff {
       var srcMethod = (CtElement) srcMethodTree
           .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
 
-      // stats
-      var srcStmts = 0;
-      try {
-        srcStmts = ((CtExecutable) srcMethod).getBody()
-            .getElements(el -> el instanceof CtStatement).size();
-      } catch (Exception e) {
-        logger.info(
-            "No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
-      }
-      var dstStmts = 0;
-      try {
-        dstStmts = ((CtExecutable) srcMethod).getBody()
-            .getElements(el -> el instanceof CtStatement).size();
-      } catch (Exception e) {
-        logger.info(
-            "No Statements in " + ((CtExecutable) srcMethod).getSimpleName());
-      }
-
-      var ms = new MethodStats(srcStmts, dstStmts,
+      var ms = new MethodStats(
           Optional.of(JVMIdentifier.SpoonToJVMString((CtExecutable) srcMethod)),
           Optional
               .of(JVMIdentifier.SpoonToJVMString((CtExecutable) dstMethod)));

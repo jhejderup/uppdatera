@@ -24,16 +24,12 @@ import java.util.Optional;
 
 public final class MethodStats {
 
-  public final int srcNumOfStmts;
-  public final int dstNumOfStmts;
-
   public final Optional<JVMIdentifier> srcMethod;
   public final Optional<JVMIdentifier> dstMethod;
 
-  public MethodStats(int srcNumOfStmts, int dstNumOfStmts,
+  public MethodStats(
       Optional<JVMIdentifier> srcMethod, Optional<JVMIdentifier> dstMethod) {
-    this.srcNumOfStmts = srcNumOfStmts;
-    this.dstNumOfStmts = dstNumOfStmts;
+
     this.srcMethod = srcMethod;
     this.dstMethod = dstMethod;
 
@@ -65,12 +61,10 @@ public final class MethodStats {
   public String toString() {
     if (dstMethod.isPresent()) {
       return this.srcMethod.get().getSignature() + " -> " + this.dstMethod.get()
-          .getSignature() + " : " + this.srcNumOfStmts + ", "
-          + this.dstNumOfStmts;
+          .getSignature();
 
     } else {
-      return this.srcMethod.get().getSignature() + " -> None" + " : "
-          + this.srcNumOfStmts;
+      return this.srcMethod.get().getSignature() + " -> None";
     }
   }
 }
