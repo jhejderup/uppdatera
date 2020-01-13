@@ -148,7 +148,7 @@ public class UppdateraMaven {
       System.exit(52);
     }
 
-    var affected = result.stream().flatMap(md -> md.entrySet().stream())
+    var affectedStats = result.stream().flatMap(md -> md.entrySet().stream())
         .filter(entry -> entry.getValue().path.size() > 0).map(entry -> {
           var callstack = entry.getValue().path;
           return callstack.get(callstack.size() - 1);
@@ -159,7 +159,7 @@ public class UppdateraMaven {
         .format("Bumps %s from %s to %s. ",
             oldCoord.groupId + ":" + oldCoord.artifactId, oldCoord.version,
             newCoord.version))).append(new BoldText(String.format(
-        "This update introduces changes in %d existing functions: %d of those functions are called by this project and has the risk of creating potential regression errors.",
+        "This update introduces changes in %d existing functions: %d of those functions are called by " + affectedStats.keySet().size()+ " function(s) in this project and has the risk of creating potential regression errors.",
         totalChangedFunctions, numAffectedFunctions))).append(new Text(
         " We advice you to review these changes before merging the pull request"))
         .append("\n\n").append(new Text(String.format(
@@ -170,7 +170,7 @@ public class UppdateraMaven {
 
     /// Affected functions
 
-    affected.entrySet().stream().forEach(e -> {
+    affectedStats.entrySet().stream().forEach(e -> {
 
       var percentage = (float)(e.getValue().size() / numAffectedFunctions) * 100;
       report.append(String.format("- %s", String.format(
@@ -186,7 +186,7 @@ public class UppdateraMaven {
 
     //Start new section
     report.append(new Text("<details>")).append("\n")
-        .append(new Text("<summary>Changelog</summary>")).append("\n")
+        .append(new Text("<summary>Dependency Changelog</summary>")).append("\n")
         .append(new Text("<p>")).append("\n\n");
 
     /// Each method
