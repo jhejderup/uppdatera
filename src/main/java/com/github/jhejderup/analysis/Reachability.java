@@ -106,7 +106,7 @@ public final class Reachability {
 
       //is this an application node?
       if (getClassLoader(vertex).equals(ClassLoaderReference.Application)) {
-        path.add(vertexName);
+        path.add(WALAToJVMIdentifier(vertex));
         return path;
       } else if (!visited.contains(vertexName)) {
         //is it the last node? (e.g., has no adjacent nodes), then none to queue

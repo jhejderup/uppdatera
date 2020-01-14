@@ -211,10 +211,10 @@ public class UppdateraMaven {
       }
 
       report.append(new Text(String.format(
-          "- [![f!](https://img.shields.io/static/v1?label=%s&message=%s()&color=informational&style=flat-square)]()[![f!](https://img.shields.io/badge/&#x21A6;-black?style=flat-square)]()[![f!](https://img.shields.io/static/v1?label=%s&message=reachable&nbsp;functions&color=critical&style=flat-square)]()",
+          "- [![f!](https://img.shields.io/static/v1?label=%s&message=%s()&color=informational&style=flat-square)]()[![f!](https://img.shields.io/badge/&#x21A6;-black?style=flat-square)]()[![f!](https://img.shields.io/static/v1?label=%s&message=reachable&nbsp;dep&nbsp;function(s)&color=critical&style=flat-square)]()",
           mid.clazzName.substring(1).replace("/", "."), mid.methodName,
           entry.getValue().size()))).append(
-          new Text("<details><summary>Indicative Affected Path(s)</summary>"))
+          new Text("<details><summary>Sample Affected Path(s)</summary>"))
           .append(traceb.toString()).append(new Text("</details>")).append(
           new Text("<details><summary>Changed Dependency Function(s)</summary>"))
           .append(new Text(formatChanges(entry.getValue(), targetMethods)))
