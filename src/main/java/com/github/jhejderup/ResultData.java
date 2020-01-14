@@ -166,7 +166,7 @@ public final class ResultData {
           "**" + this.path.get(last).clazzName.substring(1).replace("/", ".")
               + "." + this.path.get(last).methodName + "**\n");
 
-      for (int i = last - 1; i >= 0; i--) {
+      for (int i = last - 2; i >= 0; i--) {
 
         calltrace.append("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;at: " + this.path
             .get(i).clazzName.substring(1).replace("/", ".") + "." + this.path
