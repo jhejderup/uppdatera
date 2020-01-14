@@ -175,7 +175,7 @@ public class UppdateraMaven {
         totalChangedFunctions, numAffectedFunctions))).append(new Text(
         " We advise you to review these changes before merging the pull request."))
         .append("\n\n").append(new Text(
-            "Below are a list of project functions that calls changed functions in this dependency:"))
+            "Below are project functions that will be impacted after the update:"))
         .append("\n");
 
     /// iterate affected functions
@@ -212,7 +212,7 @@ public class UppdateraMaven {
 
       report.append(new Text(String.format(
           "- [![f!](https://img.shields.io/static/v1?label=%s&message=%s()&color=informational&style=flat-square)]()[![f!](https://img.shields.io/badge/&#x21A6;-black?style=flat-square)]()[![f!](https://img.shields.io/static/v1?label=%s&message=reachable&nbsp;dep&nbsp;function(s)&color=critical&style=flat-square)]()",
-          mid.clazzName.substring(1).replace("/", "."), mid.methodName,
+          mid.clazzName.substring(1).replace("/", ".").replace("_","\\_"), mid.methodName.replace("_","\\_"),
           entry.getValue().size()))).append(
           new Text("<details><summary>Sample Affected Path(s)</summary>"))
           .append(traceb.toString()).append(new Text("</details>")).append(
@@ -277,8 +277,8 @@ public class UppdateraMaven {
 
       sb.append(String.format(
           "[![f!](https://img.shields.io/static/v1?label=%s&message=%s()&color=informational&style=flat-square)]()",
-          method.getSrcMethod().clazzName.substring(1).replace("/", "."),
-          method.getSrcMethod().methodName));
+          method.getSrcMethod().clazzName.substring(1).replace("/", ".").replace("_","\\_"),
+          method.getSrcMethod().methodName.replace("_","\\_")));
 
       if(match.contains(method.getSrcMethod())){
         list.add(String.format("<li>%s%s</li>", sb.toString(),

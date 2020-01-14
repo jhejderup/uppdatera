@@ -169,8 +169,8 @@ public final class ResultData {
       for (int i = last - 2; i >= 0; i--) {
 
         calltrace.append("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;at: " + this.path
-            .get(i).clazzName.substring(1).replace("/", ".") + "." + this.path
-            .get(i).methodName + "\n");
+            .get(i).clazzName.substring(1).replace("/", ".").replace("_","\\_") + "." + this.path
+            .get(i).methodName.replace("_","\\_") + "\n");
       }
 
       calltrace.append("</code></pre>");

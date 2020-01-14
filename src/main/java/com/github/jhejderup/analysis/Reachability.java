@@ -106,6 +106,10 @@ public final class Reachability {
 
       //is this an application node?
       if (getClassLoader(vertex).equals(ClassLoaderReference.Application)) {
+        var appNode = WALAToJVMIdentifier(vertex);
+        if(!appNode.equals(vertexName)){
+          path.add(vertexName);
+        }
         path.add(WALAToJVMIdentifier(vertex));
         return path;
       } else if (!visited.contains(vertexName)) {
