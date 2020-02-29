@@ -17,7 +17,7 @@
  */
 package com.github.jhejderup;
 
-import com.github.jhejderup.artifact.JVMIdentifier;
+import com.github.jhejderup.callgraph.JVMIdentifier;
 import gumtree.spoon.builder.SpoonGumTreeBuilder;
 import gumtree.spoon.diff.operations.MoveOperation;
 import gumtree.spoon.diff.operations.Operation;

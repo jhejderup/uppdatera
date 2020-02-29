@@ -17,7 +17,7 @@
  */
 package com.github.jhejderup;
 
-import com.github.jhejderup.artifact.JVMIdentifier;
+import com.github.jhejderup.callgraph.JVMIdentifier;
 
 import java.util.Objects;
 import java.util.Optional;

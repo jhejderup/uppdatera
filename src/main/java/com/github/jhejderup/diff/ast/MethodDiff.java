@@ -20,7 +20,7 @@ package com.github.jhejderup.diff.ast;
 import com.github.gumtreediff.tree.ITree;
 import com.github.jhejderup.MethodChange;
 import com.github.jhejderup.MethodStats;
-import com.github.jhejderup.artifact.JVMIdentifier;
+import com.github.jhejderup.callgraph.JVMIdentifier;
 import com.github.jhejderup.diff.file.FileDiff;
 import gumtree.spoon.builder.SpoonGumTreeBuilder;
 import gumtree.spoon.diff.Diff;
@@ -36,213 +36,211 @@ import java.util.stream.Collectors;
 
 public final class MethodDiff {
 
-  private static Logger logger = LoggerFactory.getLogger(MethodDiff.class);
+    private static Logger logger = LoggerFactory.getLogger(MethodDiff.class);
 
-  public final Diff     editScript;
-  public final FileDiff fileDiff;
+    public final Diff editScript;
+    public final FileDiff fileDiff;
 
-  public MethodDiff(Diff editScript, FileDiff fileDiff) {
-    this.editScript = editScript;
-    this.fileDiff = fileDiff;
-  }
-
-  public static boolean isMethodKind(CtElement el) {
-    return el instanceof CtExecutable;
-  }
-
-  private static boolean isChangeInMethod(Operation op) {
-    try {
-      var methodSrc = op.getSrcNode().getParent(MethodDiff::isMethodKind);
-
-      if (op.getDstNode() != null) {
-        var methodDst = op.getDstNode().getParent(MethodDiff::isMethodKind);
-        return methodSrc != null || methodDst != null;
-      } else {
-        return methodSrc != null;
-      }
-
-    } catch (Exception el) {
-      return false;
-    }
-  }
-
-  private static Optional<CtElement> getTopLevelMethod(CtElement node) {
-
-    //1. check if the node is a method kind
-    if (isMethodKind(node)) {
-      return Optional.of(node);
-    }
-    //2. find the parent node that is a method
-    var parent = node.getParent();
-    var stack = new Stack<CtElement>();
-
-    //3. traverse to the top of the tree
-    while (parent != null && !(parent instanceof CtPackage) && node != parent) {
-      stack.push(parent);
-      parent = parent.getParent();
+    public MethodDiff(Diff editScript, FileDiff fileDiff) {
+        this.editScript = editScript;
+        this.fileDiff = fileDiff;
     }
 
-    //4. pop the stack until we find our top-level method
-    while (stack.size() > 0) {
-      var el = stack.pop();
-
-      if (isMethodKind(el)) {
-        return Optional.of(el);
-      }
-    }
-    return Optional.empty();
-  }
-
-  private static boolean isSupportedOperation(Operation op) {
-    return op instanceof InsertOperation || op instanceof UpdateOperation
-        || op instanceof DeleteOperation || op instanceof MoveOperation;
-  }
-
-  private MethodChange processInserts(InsertOperation op) {
-
-    var mapping = editScript.getMappingsComp();
-    // op node is dst side
-    var dstNode = op.getSrcNode();
-
-    // get top level method
-    var dstMethodOpt = getTopLevelMethod(dstNode);
-
-    if (!dstMethodOpt.isPresent()) {
-      return null;
-    } else {
-
-      // get gum tree node
-      var dstMethod = dstMethodOpt.get();
-      var dstMethodTree = (ITree) dstMethod
-          .getMetadata(SpoonGumTreeBuilder.GUMTREE_NODE);
-
-      // map dst -> src (if exists)
-      if (!mapping.hasDst(dstMethodTree)) {
-        // this inserted element is a part of another inserted element
-        // if there is no mapping, this is a new method
-        // we only track CHANGED methods (not new) hence there is no mapping
-        return null;
-      }
-      var srcMethodTree = mapping.getSrc(dstMethodTree);
-      var srcMethod = (CtElement) srcMethodTree
-          .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
-
-      var ms = new MethodStats(
-          Optional.of(JVMIdentifier.SpoonToJVMString((CtExecutable) srcMethod)),
-          Optional
-              .of(JVMIdentifier.SpoonToJVMString((CtExecutable) dstMethod)));
-      return new MethodChange(op, ms);
+    public static boolean isMethodKind(CtElement el) {
+        return el instanceof CtExecutable;
     }
 
-  }
+    private static boolean isChangeInMethod(Operation op) {
+        try {
+            var methodSrc = op.getSrcNode().getParent(MethodDiff::isMethodKind);
 
-  private MethodChange processDeletions(DeleteOperation op) {
-    var mapping = editScript.getMappingsComp();
-    // op node is src side
-    var srcNode = op.getSrcNode();
+            if (op.getDstNode() != null) {
+                var methodDst = op.getDstNode().getParent(MethodDiff::isMethodKind);
+                return methodSrc != null || methodDst != null;
+            } else {
+                return methodSrc != null;
+            }
 
-    // get top level method
-    var srcMethodOpt = getTopLevelMethod(srcNode);
+        } catch (Exception el) {
+            return false;
+        }
+    }
 
-    if (!srcMethodOpt.isPresent()) {
-      return null;
-    } else {
-      var srcMethod = srcMethodOpt.get();
-      var srcMethodTree = (ITree) srcMethod
-          .getMetadata(SpoonGumTreeBuilder.GUMTREE_NODE);
+    private static Optional<CtElement> getTopLevelMethod(CtElement node) {
 
-      // src -> dst mapping
-      if (!mapping.hasSrc(srcMethodTree)) {
-        // this implies that the function is also deleted and hence not
-        // mapped in the new version!
+        //1. check if the node is a method kind
+        if (isMethodKind(node)) {
+            return Optional.of(node);
+        }
+        //2. find the parent node that is a method
+        var parent = node.getParent();
+        var stack = new Stack<CtElement>();
 
-        var ms = new MethodStats(Optional
-            .of(JVMIdentifier.SpoonToJVMString((CtExecutable) srcMethod)),
-            Optional.empty());
-        return new MethodChange(op, ms);
-      }
+        //3. traverse to the top of the tree
+        while (parent != null && !(parent instanceof CtPackage) && node != parent) {
+            stack.push(parent);
+            parent = parent.getParent();
+        }
 
-      var dstMethodTree = mapping.getDst(srcMethodTree);
-      var dstMethod = (CtElement) dstMethodTree
-          .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+        //4. pop the stack until we find our top-level method
+        while (stack.size() > 0) {
+            var el = stack.pop();
 
-      var ms = new MethodStats(
-          Optional.of(JVMIdentifier.SpoonToJVMString((CtExecutable) srcMethod)),
-          Optional
-              .of(JVMIdentifier.SpoonToJVMString((CtExecutable) dstMethod)));
-      return new MethodChange(op, ms);
+            if (isMethodKind(el)) {
+                return Optional.of(el);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static boolean isSupportedOperation(Operation op) {
+        return op instanceof InsertOperation || op instanceof UpdateOperation
+                || op instanceof DeleteOperation || op instanceof MoveOperation;
+    }
+
+    private MethodChange processInserts(InsertOperation op) {
+
+        var mapping = editScript.getMappingsComp();
+        // op node is dst side
+        var dstNode = op.getSrcNode();
+
+        // get top level method
+        var dstMethodOpt = getTopLevelMethod(dstNode);
+
+        if (!dstMethodOpt.isPresent()) {
+            return null;
+        } else {
+
+            // get gum tree node
+            var dstMethod = dstMethodOpt.get();
+            var dstMethodTree = (ITree) dstMethod
+                    .getMetadata(SpoonGumTreeBuilder.GUMTREE_NODE);
+
+            // map dst -> src (if exists)
+            if (!mapping.hasDst(dstMethodTree)) {
+                // this inserted element is a part of another inserted element
+                // if there is no mapping, this is a new method
+                // we only track CHANGED methods (not new) hence there is no mapping
+                return null;
+            }
+            var srcMethodTree = mapping.getSrc(dstMethodTree);
+            var srcMethod = (CtElement) srcMethodTree
+                    .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+
+            var ms = new MethodStats(
+                    Optional.of(JVMIdentifier.fromSpoonExecutable((CtExecutable) srcMethod)),
+                    Optional.of(JVMIdentifier.fromSpoonExecutable((CtExecutable) dstMethod)));
+            return new MethodChange(op, ms);
+        }
 
     }
 
-  }
+    private MethodChange processDeletions(DeleteOperation op) {
+        var mapping = editScript.getMappingsComp();
+        // op node is src side
+        var srcNode = op.getSrcNode();
 
-  private MethodChange processUpdatesAndMoves(Operation op) {
-    assert op instanceof UpdateOperation || op instanceof MoveOperation;
+        // get top level method
+        var srcMethodOpt = getTopLevelMethod(srcNode);
 
-    var mapping = editScript.getMappingsComp();
-    // op node is dst side
-    var dstNode = op.getDstNode();
+        if (!srcMethodOpt.isPresent()) {
+            return null;
+        } else {
+            var srcMethod = srcMethodOpt.get();
+            var srcMethodTree = (ITree) srcMethod
+                    .getMetadata(SpoonGumTreeBuilder.GUMTREE_NODE);
 
-    // get top level method
-    var dstMethodOpt = getTopLevelMethod(dstNode);
+            // src -> dst mapping
+            if (!mapping.hasSrc(srcMethodTree)) {
+                // this implies that the function is also deleted and hence not
+                // mapped in the new version!
 
-    if (!dstMethodOpt.isPresent()) {
-      return null;
-    } else {
+                var ms = new MethodStats(
+                        Optional.of(JVMIdentifier.fromSpoonExecutable((CtExecutable) srcMethod)),
+                        Optional.empty());
+                return new MethodChange(op, ms);
+            }
 
-      // get gum tree node
-      var dstMethod = dstMethodOpt.get();
-      var dstMethodTree = (ITree) dstMethod
-          .getMetadata(SpoonGumTreeBuilder.GUMTREE_NODE);
+            var dstMethodTree = mapping.getDst(srcMethodTree);
+            var dstMethod = (CtElement) dstMethodTree
+                    .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
 
-      // map dst -> src (if exists)
-      if (!mapping.hasDst(dstMethodTree)) {
-        // An updated node belonging to a new method!
-        return null;
-      }
-      var srcMethodTree = mapping.getSrc(dstMethodTree);
-      var srcMethod = (CtElement) srcMethodTree
-          .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
+            var ms = new MethodStats(
+                    Optional.of(JVMIdentifier.fromSpoonExecutable((CtExecutable) srcMethod)),
+                    Optional.of(JVMIdentifier.fromSpoonExecutable((CtExecutable) dstMethod)));
+            return new MethodChange(op, ms);
 
-      var ms = new MethodStats(
-          Optional.of(JVMIdentifier.SpoonToJVMString((CtExecutable) srcMethod)),
-          Optional
-              .of(JVMIdentifier.SpoonToJVMString((CtExecutable) dstMethod)));
-      return new MethodChange(op, ms);
+        }
+
     }
 
-  }
+    private MethodChange processUpdatesAndMoves(Operation op) {
+        assert op instanceof UpdateOperation || op instanceof MoveOperation;
 
-  public Map<JVMIdentifier, List<Map.Entry<MethodStats, List<Operation>>>> getChangedMethods() {
+        var mapping = editScript.getMappingsComp();
+        // op node is dst side
+        var dstNode = op.getDstNode();
 
-    var operations = fileDiff.isFileRemoval() ?
-        editScript.getAllOperations() :
-        editScript.getRootOperations();
+        // get top level method
+        var dstMethodOpt = getTopLevelMethod(dstNode);
 
-    var changedMethods = operations.stream()
-        .filter(MethodDiff::isSupportedOperation)
-        .filter(MethodDiff::isChangeInMethod).map(op -> {
-          if (op instanceof InsertOperation) {
-            return processInserts((InsertOperation) op);
-          } else if (op instanceof DeleteOperation) {
-            return processDeletions((DeleteOperation) op);
-          } else if (op instanceof UpdateOperation
-              || op instanceof MoveOperation) {
-            return processUpdatesAndMoves(op);
-          }
-          return null;
+        if (!dstMethodOpt.isPresent()) {
+            return null;
+        } else {
 
-        }).filter(Objects::nonNull)
-        .collect(Collectors.groupingBy(MethodChange::getMethod));
+            // get gum tree node
+            var dstMethod = dstMethodOpt.get();
+            var dstMethodTree = (ITree) dstMethod
+                    .getMetadata(SpoonGumTreeBuilder.GUMTREE_NODE);
 
-    var groupedMethods = changedMethods.entrySet().stream().collect(Collectors
-        .toMap(Map.Entry::getKey,
-            m -> m.getValue().stream().map(mc -> mc.change)
-                .collect(Collectors.toList())));
+            // map dst -> src (if exists)
+            if (!mapping.hasDst(dstMethodTree)) {
+                // An updated node belonging to a new method!
+                return null;
+            }
+            var srcMethodTree = mapping.getSrc(dstMethodTree);
+            var srcMethod = (CtElement) srcMethodTree
+                    .getMetadata(SpoonGumTreeBuilder.SPOON_OBJECT);
 
-    return groupedMethods.entrySet().stream()
-        .collect(Collectors.groupingBy(m -> m.getKey().getSrcMethod()));
+            var ms = new MethodStats(
+                    Optional.of(JVMIdentifier.fromSpoonExecutable((CtExecutable) srcMethod)),
+                    Optional
+                            .of(JVMIdentifier.fromSpoonExecutable((CtExecutable) dstMethod)));
+            return new MethodChange(op, ms);
+        }
 
-  }
+    }
+
+    public Map<JVMIdentifier, List<Map.Entry<MethodStats, List<Operation>>>> getChangedMethods() {
+
+        var operations = fileDiff.isFileRemoval() ?
+                editScript.getAllOperations() :
+                editScript.getRootOperations();
+
+        var changedMethods = operations.stream()
+                .filter(MethodDiff::isSupportedOperation)
+                .filter(MethodDiff::isChangeInMethod).map(op -> {
+                    if (op instanceof InsertOperation) {
+                        return processInserts((InsertOperation) op);
+                    } else if (op instanceof DeleteOperation) {
+                        return processDeletions((DeleteOperation) op);
+                    } else if (op instanceof UpdateOperation
+                            || op instanceof MoveOperation) {
+                        return processUpdatesAndMoves(op);
+                    }
+                    return null;
+
+                }).filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(MethodChange::getMethod));
+
+        var groupedMethods = changedMethods.entrySet().stream().collect(Collectors
+                .toMap(Map.Entry::getKey,
+                        m -> m.getValue().stream().map(mc -> mc.change)
+                                .collect(Collectors.toList())));
+
+        return groupedMethods.entrySet().stream()
+                .collect(Collectors.groupingBy(m -> m.getKey().getSrcMethod()));
+
+    }
 
 }

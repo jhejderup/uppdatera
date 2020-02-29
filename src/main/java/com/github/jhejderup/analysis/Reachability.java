@@ -17,116 +17,109 @@
  */
 package com.github.jhejderup.analysis;
 
-import com.github.jhejderup.artifact.JVMIdentifier;
+import com.github.jhejderup.callgraph.JVMIdentifier;
+import com.github.jhejderup.callgraph.MethodContext;
 import com.github.jhejderup.callgraph.ResolvedCall;
-import com.ibm.wala.types.ClassLoaderReference;
-import com.ibm.wala.types.MethodReference;
+import com.github.jhejderup.callgraph.ResolvedMethod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class Reachability {
 
-  private static Logger                                      logger = LoggerFactory
-      .getLogger(Reachability.class);
-  private final  Map<MethodReference, List<MethodReference>> graph;
-  private final  Map<JVMIdentifier, MethodReference>         lookup;
+    private static Logger logger = LoggerFactory
+            .getLogger(Reachability.class);
+    private final Map<ResolvedMethod, List<ResolvedMethod>> graph;
+    private final Map<JVMIdentifier, ResolvedMethod> lookup;
 
-  public Reachability(List<ResolvedCall> cg) {
-    this.graph = new HashMap<>();
-    this.lookup = new HashMap<>();
+    public Reachability(List<ResolvedCall> cg) {
+        this.graph = new HashMap<>();
+        this.lookup = new HashMap<>();
 
-    cg.stream().filter(call -> !getClassLoader(call.target)
-        .equals(ClassLoaderReference.Primordial)).forEach(call -> {
-      //populate lookup table
-      var target = WALAToJVMIdentifier(call.target);
-      var source = WALAToJVMIdentifier(call.source);
+        cg.stream().filter(call -> call.getTarget().getContext() != MethodContext.PRIMORDIAL).forEach(call -> {
+            //populate lookup table
+            var target = call.getTarget().getIdentifier();
+            var source = call.getSource().getIdentifier();
 
-      if (!this.lookup.containsKey(target)) {
-        this.lookup.put(target, call.target);
-      }
-      if (!lookup.containsKey(source)) {
-        this.lookup.put(target, call.source);
-      }
-      //populate a "reverse graph"
-      if (this.graph.containsKey(call.target)) {
-        this.graph.get(call.target).add(call.source);
-      } else {
-        this.graph.put(call.target,
-            Stream.of(call.source).collect(Collectors.toList()));
-      }
-    });
-  }
-
-  private static JVMIdentifier WALAToJVMIdentifier(MethodReference ref) {
-    return new JVMIdentifier(ref.getDeclaringClass().getName().toString(),
-        ref.getName().toString(), ref.getDescriptor().toString(),Optional.empty());
-  }
-
-  public static ClassLoaderReference getClassLoader(MethodReference m) {
-    return m.getDeclaringClass().getClassLoader();
-  }
-
-  public List<JVMIdentifier> search(JVMIdentifier methodID) {
-
-    ///
-    /// Validate node
-    ///
-    if (!this.lookup.containsKey(methodID)) {
-      logger.info(
-          "[search] the function `" + methodID + "` is not called by the user");
-      return new ArrayList<>();
+            if (!this.lookup.containsKey(target)) {
+                this.lookup.put(target, call.getTarget());
+            }
+            if (!lookup.containsKey(source)) {
+                this.lookup.put(target, call.getSource());
+            }
+            //populate a "reverse graph"
+            if (this.graph.containsKey(call.getTarget())) {
+                this.graph.get(call.getTarget()).add(call.getSource());
+            } else {
+                this.graph.put(call.getTarget(), Stream.of(call.getSource()).collect(Collectors.toList()));
+            }
+        });
     }
 
-    var root = this.lookup.get(methodID);
-
-    if (!getClassLoader(root).equals(ClassLoaderReference.Extension)) {
-      logger.error("[search] the function `" + methodID
-          + "` is not a dependency node (e.g., Extension type)");
-      return new ArrayList<>();
-    }
-
-    ///
-    /// Search
-    ///
-    var queue = new LinkedList<List<JVMIdentifier>>();
-    var visited = new HashSet<JVMIdentifier>();
-    queue.add(Stream.of(methodID).collect(Collectors.toList()));
-
-    while (queue.size() > 0) {
-      // Get first path in the queue
-      var path = queue.pop();
-
-      // Get the last node of that path
-      var vertexName = path.get(path.size() - 1);
-      var vertex = this.lookup.get(vertexName);
-
-      //is this an application node?
-      if (getClassLoader(vertex).equals(ClassLoaderReference.Application)) {
-        var appNode = WALAToJVMIdentifier(vertex);
-        if(!appNode.equals(vertexName)){
-          path.add(vertexName);
+    public List<JVMIdentifier> search(JVMIdentifier methodID) {
+        ///
+        /// Validate node
+        ///
+        if (!this.lookup.containsKey(methodID)) {
+            logger.info(
+                    "[search] the function `" + methodID + "` is not called by the user");
+            return new ArrayList<>();
         }
-        path.add(WALAToJVMIdentifier(vertex));
-        return path;
-      } else if (!visited.contains(vertexName)) {
-        //is it the last node? (e.g., has no adjacent nodes), then none to queue
-        if (this.graph.containsKey(vertex)) {
-          var neighbours = this.graph.get(vertex);
-          for (var neighbour : neighbours) {
-            var new_path = new ArrayList<>(path);
-            new_path.add(WALAToJVMIdentifier(neighbour));
-            //add to end of the list
-            queue.add(new_path);
-          }
+
+        var root = this.lookup.get(methodID);
+
+        if (root.getContext() != MethodContext.DEPENDENCY) {
+            logger.error("[search] the function `" + methodID
+                    + "` is not a dependency node (e.g., Extension type)");
+            return new ArrayList<>();
         }
-        // Mark node as visited!
-        visited.add(vertexName);
-      }
+
+        ///
+        /// Search
+        ///
+        var queue = new LinkedList<List<JVMIdentifier>>();
+        var visited = new HashSet<JVMIdentifier>();
+        queue.add(Stream.of(methodID).collect(Collectors.toList()));
+
+        while (queue.size() > 0) {
+            // Get first path in the queue
+            var path = queue.pop();
+
+            // Get the last node of that path
+            var vertexName = path.get(path.size() - 1);
+            var vertex = this.lookup.get(vertexName);
+
+            //is this an application node?
+            if (vertex.getContext() == MethodContext.APPLICATION) {
+                var appNode = vertex.getIdentifier();
+                if (!appNode.equals(vertexName)) {
+                    path.add(vertexName);
+                }
+                path.add(vertex.getIdentifier());
+                return path;
+            } else if (!visited.contains(vertexName)) {
+                //is it the last node? (e.g., has no adjacent nodes), then none to queue
+                if (this.graph.containsKey(vertex)) {
+                    var neighbours = this.graph.get(vertex);
+                    for (var neighbour : neighbours) {
+                        var new_path = new ArrayList<>(path);
+                        new_path.add(neighbour.getIdentifier());
+                        //add to end of the list
+                        queue.add(new_path);
+                    }
+                }
+                // Mark node as visited!
+                visited.add(vertexName);
+            }
+        }
+        return new ArrayList<>();
     }
-    return new ArrayList<>();
-  }
 }
