@@ -116,22 +116,22 @@ public final class WalaCallgraphConstructor implements CallgraphConstructor {
             //Resolve ref to impl
             var resolveMethod = cg.getClassHierarchy().resolveMethod(srcMref);
 
-            cg.getNodes(srcMref).stream().forEach(cgNode -> {
-                itrToStream(cgNode.iterateCallSites())
-                        .flatMap(cs -> cg.getPossibleTargets(cgNode, cs).stream()) // get concrete call targets
-                        .map(n -> n.getMethod().getReference()).forEach(csMref -> {
-                    if (!visited.contains(csMref)) {
-                        workList.add(csMref);
-                        visited.add(csMref);
-                        if (resolveMethod != null) {
-                            ResolvedCall call = new ResolvedCall(new WalaResolvedMethod(resolveMethod.getReference()), new WalaResolvedMethod(csMref));
+            cg.getNodes(srcMref).stream().forEach(cgNode -> itrToStream(cgNode.iterateCallSites())
+                    .flatMap(cs -> cg.getPossibleTargets(cgNode, cs).stream()) // get concrete call targets
+                    .map(n -> n.getMethod().getReference()).forEach(csMref -> {
+                if (!visited.contains(csMref)) {
+                    workList.add(csMref);
+                    visited.add(csMref);
+                    if (resolveMethod != null) {
+                        ResolvedCall call = new ResolvedCall(
+                                new WalaResolvedMethod(resolveMethod.getReference()),
+                                new WalaResolvedMethod(csMref)
+                        );
 //                        logger.info(call.toString());
-                            calls.add(call);
-                        }
+                        calls.add(call);
                     }
-
-                });
-            });
+                }
+            }));
         }
         return calls;
     }

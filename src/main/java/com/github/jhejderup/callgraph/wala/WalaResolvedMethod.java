@@ -6,6 +6,8 @@ import com.github.jhejderup.callgraph.ResolvedMethod;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
 
+import java.util.Objects;
+
 public class WalaResolvedMethod implements ResolvedMethod {
 
     JVMIdentifier identifier;
@@ -44,5 +46,19 @@ public class WalaResolvedMethod implements ResolvedMethod {
     @Override
     public String toString() {
         return identifier.toString() + " [" + context.name() + "]";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        WalaResolvedMethod that = (WalaResolvedMethod) o;
+        return identifier.equals(that.identifier) &&
+                context == that.context;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identifier, context);
     }
 }
