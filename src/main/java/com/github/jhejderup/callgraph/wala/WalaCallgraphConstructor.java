@@ -54,10 +54,9 @@ public final class WalaCallgraphConstructor implements CallgraphConstructor {
     public List<ResolvedCall> build(String projectClasspath, String depzClasspath) {
         try {
 
-            logger.info("Building call graph with project classpath: {}",
-                    projectClasspath);
-            logger
-                    .info("Building call graph with depz classpath: {}", depzClasspath);
+            logger.info("Building call graph with project classpath: {}", projectClasspath);
+            logger.info("Building call graph with depz classpath: {}", depzClasspath);
+
             //1. Fetch exclusion file
             var classLoader = WalaCallgraphConstructor.class.getClassLoader();
             var exclusionFile = new File(
@@ -77,7 +76,7 @@ public final class WalaCallgraphConstructor implements CallgraphConstructor {
             //4. Both Private/Public functions are entry-points
             var entryPoints = makeEntryPoints(scope, classHierarchy);
 
-            entryPoints.forEach(e -> System.out.println(e.toString()));
+//            entryPoints.forEach(e -> System.out.println(e.toString()));
 
             //5. Encapsulates various analysis options
             var options = new AnalysisOptions(scope, entryPoints);
@@ -124,7 +123,7 @@ public final class WalaCallgraphConstructor implements CallgraphConstructor {
                     }
                     if (resolveMethod != null) {
                         ResolvedCall call = new ResolvedCall(new WalaResolvedMethod(resolveMethod.getReference()), new WalaResolvedMethod(csMref));
-                        logger.info(call.toString());
+//                        logger.info(call.toString());
                         calls.add(call);
                     }
                 });
@@ -153,7 +152,7 @@ public final class WalaCallgraphConstructor implements CallgraphConstructor {
     }
 
     private boolean skipAbstractMethod(AnalysisScope scope,
-                                              IMethod method) {
+                                       IMethod method) {
         return !method.isAbstract() && isApplication(scope,
                 method.getDeclaringClass());
     }
