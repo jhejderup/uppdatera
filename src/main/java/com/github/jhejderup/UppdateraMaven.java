@@ -100,9 +100,14 @@ public class UppdateraMaven {
         ///
         /// 2. Call Graph Generation
         ///
-        CallgraphConstructor cgConstructor = new WalaCallgraphConstructor();
+        CallgraphConstructor cgConstructor = new WalaCallgraphConstructor(); // Can be switched to Opal callgraph in the future.
         var cg = cgConstructor.build(projectClasspath, depzClasspath);
+
+        logger.info("[Uppdatera] Done setting up call graph");
+
         var graph = new Reachability(cg);
+
+        logger.info("[Uppdatera] Done setting up reachability analysis");
 
         ///
         /// 3. EditScript Generation

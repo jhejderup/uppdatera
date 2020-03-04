@@ -72,18 +72,22 @@ public final class WalaCallgraphConstructor implements CallgraphConstructor {
 
             //3. Class Hierarchy for name resolution -> missing superclasses are replaced by the ClassHierarchy root,
             //   i.e. java.lang.Object
-            var cha = ClassHierarchyFactory.makeWithRoot(scope);
+            var classHierarchy = ClassHierarchyFactory.makeWithRoot(scope);
 
             //4. Both Private/Public functions are entry-points
-            var entryPoints = makeEntryPoints(scope, cha);
+            var entryPoints = makeEntryPoints(scope, classHierarchy);
+
+            entryPoints.forEach(e -> System.out.println(e.toString()));
 
             //5. Encapsulates various analysis options
             var options = new AnalysisOptions(scope, entryPoints);
             var cache = new AnalysisCacheImpl();
 
             //6 Build the call graph
-            var builder = Util.makeRTABuilder(options, cache, cha, scope);
+            var builder = Util.makeRTABuilder(options, cache, classHierarchy, scope);
             var cg = builder.makeCallGraph(options, null);
+
+            logger.info("[Uppdatera] Resolving call targets...");
 
             return resolveCallTargets(cg);
 
@@ -92,7 +96,8 @@ public final class WalaCallgraphConstructor implements CallgraphConstructor {
             return null;
         }
     }
-    private static List<ResolvedCall> resolveCallTargets(CallGraph cg) {
+
+    private List<ResolvedCall> resolveCallTargets(CallGraph cg) {
         //Get all entrypoints and turn into a J8 Stream
         var callSites = itrToStream(
                 cg.getFakeRootNode().iterateCallSites());
@@ -118,8 +123,9 @@ public final class WalaCallgraphConstructor implements CallgraphConstructor {
                         visited.add(csMref);
                     }
                     if (resolveMethod != null) {
-                        calls.add(new ResolvedCall(new WalaResolvedMethod(resolveMethod.getReference()), new WalaResolvedMethod(csMref)) {
-                        });
+                        ResolvedCall call = new ResolvedCall(new WalaResolvedMethod(resolveMethod.getReference()), new WalaResolvedMethod(csMref));
+                        logger.info(call.toString());
+                        calls.add(call);
                     }
                 });
             });
@@ -127,37 +133,37 @@ public final class WalaCallgraphConstructor implements CallgraphConstructor {
         return calls;
     }
 
-    private static <T> Stream<T> itrToStream(Iterator<T> itr) {
+    private <T> Stream<T> itrToStream(Iterator<T> itr) {
         Iterable<T> iterable = () -> itr;
         return StreamSupport.stream(iterable.spliterator(), false);
     }
 
-    private static ArrayList<Entrypoint> makeEntryPoints(AnalysisScope scope,
-                                                         ClassHierarchy cha) {
-        Iterable<IClass> classes = () -> cha.iterator();
+    private ArrayList<Entrypoint> makeEntryPoints(AnalysisScope scope, ClassHierarchy classHierarchy) {
+        Iterable<IClass> classes = () -> classHierarchy.iterator();
         var entryPoints = StreamSupport.stream(classes.spliterator(), false)
-                .filter(clazz -> isApplication(scope, clazz))
-                .filter(WalaCallgraphConstructor::skipInterface)
+                .filter(clazz -> skipInterface(scope, clazz))
                 .flatMap(clazz -> clazz.getDeclaredMethods().parallelStream())
-                .filter(WalaCallgraphConstructor::skipAbstractMethod)
-                .map(m -> new DefaultEntrypoint(m, cha)).collect(Collectors.toList());
+                .filter(m -> skipAbstractMethod(scope, m))
+                .map(m -> new DefaultEntrypoint(m, classHierarchy)).collect(Collectors.toList());
         return new ArrayList<>(entryPoints);
     }
 
-    private static boolean skipInterface(IClass klass) {
-        return !klass.isInterface();
+    private boolean skipInterface(AnalysisScope scope, IClass klass) {
+        return !klass.isInterface() && isApplication(scope, klass);
     }
 
-    private static boolean skipAbstractMethod(IMethod method) {
-        return !method.isAbstract();
+    private boolean skipAbstractMethod(AnalysisScope scope,
+                                              IMethod method) {
+        return !method.isAbstract() && isApplication(scope,
+                method.getDeclaringClass());
     }
 
-    private static Boolean isApplication(AnalysisScope scope, IClass klass) {
+    public Boolean isApplication(AnalysisScope scope, IClass klass) {
         return scope.getApplicationLoader()
                 .equals(klass.getClassLoader().getReference());
     }
 
-    private static Boolean isExtension(AnalysisScope scope, IClass klass) {
+    private Boolean isExtension(AnalysisScope scope, IClass klass) {
         return scope.getExtensionLoader()
                 .equals(klass.getClassLoader().getReference());
     }

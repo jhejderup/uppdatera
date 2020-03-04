@@ -40,4 +40,9 @@ public class WalaResolvedMethod implements ResolvedMethod {
     public MethodContext getContext() {
         return context;
     }
+
+    @Override
+    public String toString() {
+        return identifier.toString() + " [" + context.name() + "]";
+    }
 }

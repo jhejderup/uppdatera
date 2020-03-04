@@ -2,7 +2,7 @@ package com.github.jhejderup.callgraph;
 
 import java.io.Serializable;
 
-public class ResolvedCall implements Serializable {
+public final class ResolvedCall implements Serializable {
 
     private final ResolvedMethod source;
     private final ResolvedMethod target;
@@ -18,5 +18,10 @@ public class ResolvedCall implements Serializable {
 
     public ResolvedMethod getTarget() {
         return target;
+    }
+
+    @Override
+    public String toString() {
+        return getSource().toString() + " -> " + getTarget().toString();
     }
 }
