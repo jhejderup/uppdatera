@@ -31,6 +31,7 @@ import com.ibm.wala.ipa.callgraph.impl.DefaultEntrypoint;
 import com.ibm.wala.ipa.callgraph.impl.Util;
 import com.ibm.wala.ipa.cha.ClassHierarchy;
 import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
+import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.util.config.AnalysisScopeReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,14 +74,16 @@ public final class WalaCallgraphConstructor implements CallgraphConstructor {
             //   i.e. java.lang.Object
             var classHierarchy = ClassHierarchyFactory.makeWithRoot(scope);
 
+            logger.info("[Uppdatera] Creating entry points...");
+
             //4. Both Private/Public functions are entry-points
             var entryPoints = makeEntryPoints(scope, classHierarchy);
-
-//            entryPoints.forEach(e -> System.out.println(e.toString()));
 
             //5. Encapsulates various analysis options
             var options = new AnalysisOptions(scope, entryPoints);
             var cache = new AnalysisCacheImpl();
+
+            logger.info("[Uppdatera] Building callgraph...");
 
             //6 Build the call graph
             var builder = Util.makeRTABuilder(options, cache, classHierarchy, scope);
@@ -105,7 +108,7 @@ public final class WalaCallgraphConstructor implements CallgraphConstructor {
         var workList = callSites.map(CallSiteReference::getDeclaredTarget)
                 .collect(Collectors.toCollection(Stack::new));
 
-        var visited = new HashSet<>();
+        var visited = new HashSet<MethodReference>();
         var calls = new ArrayList<ResolvedCall>();
 
         while (!workList.empty()) {
@@ -120,12 +123,13 @@ public final class WalaCallgraphConstructor implements CallgraphConstructor {
                     if (!visited.contains(csMref)) {
                         workList.add(csMref);
                         visited.add(csMref);
-                    }
-                    if (resolveMethod != null) {
-                        ResolvedCall call = new ResolvedCall(new WalaResolvedMethod(resolveMethod.getReference()), new WalaResolvedMethod(csMref));
+                        if (resolveMethod != null) {
+                            ResolvedCall call = new ResolvedCall(new WalaResolvedMethod(resolveMethod.getReference()), new WalaResolvedMethod(csMref));
 //                        logger.info(call.toString());
-                        calls.add(call);
+                            calls.add(call);
+                        }
                     }
+
                 });
             });
         }
