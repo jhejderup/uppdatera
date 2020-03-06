@@ -80,12 +80,12 @@ public class UppdateraMaven {
         var oldJar = oldArtifact.getBinary();
         var newSrc = newArtifact.getSource();
 
-        if (!oldSrc.isPresent() || !newSrc.isPresent() || !oldJar.isPresent()) {
-            if (!oldSrc.isPresent())
+        if (oldSrc.isEmpty() || newSrc.isEmpty() || oldJar.isEmpty()) {
+            if (oldSrc.isEmpty())
                 logger.error("[Uppdatera] Unable to download source for " + oldCoord);
-            if (!newSrc.isPresent())
-                logger.error("[Uppdatera] Unable to  download source for  " + newCoord);
-            if (!oldJar.isPresent())
+            if (newSrc.isEmpty())
+                logger.error("[Uppdatera] Unable to download source for  " + newCoord);
+            if (oldJar.isEmpty())
                 logger.error("[Uppdatera] Unable to download jar file for " + oldCoord);
             System.exit(50);
         }
