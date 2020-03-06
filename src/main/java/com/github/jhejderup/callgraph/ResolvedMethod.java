@@ -5,6 +5,6 @@ public interface ResolvedMethod {
 
     JVMIdentifier getIdentifier();
 
-    MethodContext getContext();
+    MethodScope getContext();
 
 }

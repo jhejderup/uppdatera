@@ -1,7 +1,7 @@
 package com.github.jhejderup.callgraph.wala;
 
 import com.github.jhejderup.callgraph.JVMIdentifier;
-import com.github.jhejderup.callgraph.MethodContext;
+import com.github.jhejderup.callgraph.MethodScope;
 import com.github.jhejderup.callgraph.ResolvedMethod;
 import com.ibm.wala.types.ClassLoaderReference;
 import com.ibm.wala.types.MethodReference;
@@ -11,7 +11,7 @@ import java.util.Objects;
 public class WalaResolvedMethod implements ResolvedMethod {
 
     JVMIdentifier identifier;
-    MethodContext context;
+    MethodScope context;
 
     public WalaResolvedMethod(MethodReference methodReference) {
         identifier = JVMIdentifier.fromWalaMethodReference(methodReference);
@@ -19,13 +19,13 @@ public class WalaResolvedMethod implements ResolvedMethod {
         ClassLoaderReference classLoader = getClassLoader(methodReference);
 
         if (classLoader.equals(ClassLoaderReference.Application)) {
-            context = MethodContext.APPLICATION;
+            context = MethodScope.APPLICATION;
         } else if (classLoader.equals(ClassLoaderReference.Extension)) {
-            context = MethodContext.DEPENDENCY;
+            context = MethodScope.DEPENDENCY;
         } else if (classLoader.equals(ClassLoaderReference.Primordial)) {
-            context = MethodContext.PRIMORDIAL;
+            context = MethodScope.PRIMORDIAL;
         } else {
-            context = MethodContext.UNKNOWN;
+            context = MethodScope.UNKNOWN;
         }
     }
 
@@ -39,7 +39,7 @@ public class WalaResolvedMethod implements ResolvedMethod {
     }
 
     @Override
-    public MethodContext getContext() {
+    public MethodScope getContext() {
         return context;
     }
 

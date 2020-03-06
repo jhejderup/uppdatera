@@ -10,6 +10,11 @@
     <description>
         Semantic update checker for Java projects
     </description>
+
+    <properties>
+        <wala.version>1.5.4</wala.version>
+    </properties>
+
     <licenses>
         <license>
             <name>Apache License v2.0</name>
@@ -21,33 +26,18 @@
         <connection>https://github.com/jhejderup/uppdatera</connection>
         <url>https://github.com/jhejderup/uppdatera</url>
     </scm>
-    <repositories>
-        <repository>
-            <id>jitpack.io</id>
-            <url>https://jitpack.io</url>
-        </repository>
-    </repositories>
-    <profiles>
-        <profile>
-            <id>intellij-idea-only</id>
-            <activation>
-                <property>
-                    <name>idea.maven.embedder.version</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <configuration>
-                            <release>11</release>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
+<!--    <repositories>-->
+<!--        <repository>-->
+<!--            <id>oss.sonatype.org-snapshot</id>-->
+<!--            <url>http://oss.sonatype.org/content/repositories/snapshots</url>-->
+<!--            <releases>-->
+<!--                <enabled>false</enabled>-->
+<!--            </releases>-->
+<!--            <snapshots>-->
+<!--                <enabled>true</enabled>-->
+<!--            </snapshots>-->
+<!--        </repository>-->
+<!--    </repositories>-->
     <build>
         <plugins>
             <plugin>
@@ -63,19 +53,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.0</version>
                 <configuration>
-                    <release>8</release>
-                    <annotationProcessorPaths>
-                        <annotationProcessorPath>
-                            <groupId>com.github.bsideup.jabel</groupId>
-                            <artifactId>jabel-javac-plugin</artifactId>
-                            <version>0.2.0</version>
-                        </annotationProcessorPath>
-                    </annotationProcessorPaths>
-                    <annotationProcessors>
-                        <annotationProcessor>
-                            com.github.bsideup.jabel.JabelJavacProcessor
-                        </annotationProcessor>
-                    </annotationProcessors>
+                    <release>11</release>
                 </configuration>
             </plugin>
             <plugin>
@@ -141,17 +119,17 @@
         <dependency>
             <groupId>com.ibm.wala</groupId>
             <artifactId>com.ibm.wala.core</artifactId>
-            <version>1.5.3</version>
+            <version>${wala.version}</version>
         </dependency>
         <dependency>
             <groupId>com.ibm.wala</groupId>
             <artifactId>com.ibm.wala.util</artifactId>
-            <version>1.5.3</version>
+            <version>${wala.version}</version>
         </dependency>
         <dependency>
             <groupId>com.ibm.wala</groupId>
             <artifactId>com.ibm.wala.shrike</artifactId>
-            <version>1.5.3</version>
+            <version>${wala.version}</version>
         </dependency>
         <dependency>
             <groupId>org.zeroturnaround</groupId>

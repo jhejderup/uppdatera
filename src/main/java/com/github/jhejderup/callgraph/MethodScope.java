@@ -1,6 +1,6 @@
 package com.github.jhejderup.callgraph;
 
-public enum MethodContext {
+public enum MethodScope {
 
     APPLICATION, DEPENDENCY, PRIMORDIAL, UNKNOWN;
 
