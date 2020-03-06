@@ -19,6 +19,7 @@ package com.github.jhejderup;
 
 import com.github.jhejderup.analysis.Reachability;
 import com.github.jhejderup.callgraph.CallgraphConstructor;
+import com.github.jhejderup.callgraph.CallgraphException;
 import com.github.jhejderup.callgraph.JVMIdentifier;
 import com.github.jhejderup.artifact.maven.Artifact;
 import com.github.jhejderup.artifact.maven.Coordinate;
@@ -61,7 +62,7 @@ public class UppdateraMaven {
     /// - [4] version old
     /// - [5] version new
     //////////
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, CallgraphException {
         assert args.length == 6;
 
         var projectClasspath = args[0];

@@ -18,6 +18,7 @@
 package com.github.jhejderup.callgraph.wala;
 
 import com.github.jhejderup.callgraph.CallgraphConstructor;
+import com.github.jhejderup.callgraph.CallgraphException;
 import com.github.jhejderup.callgraph.ResolvedCall;
 import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.classLoader.IClass;
@@ -26,10 +27,12 @@ import com.ibm.wala.ipa.callgraph.AnalysisCacheImpl;
 import com.ibm.wala.ipa.callgraph.AnalysisOptions;
 import com.ibm.wala.ipa.callgraph.AnalysisScope;
 import com.ibm.wala.ipa.callgraph.CallGraph;
+import com.ibm.wala.ipa.callgraph.CallGraphBuilderCancelException;
 import com.ibm.wala.ipa.callgraph.Entrypoint;
 import com.ibm.wala.ipa.callgraph.impl.DefaultEntrypoint;
 import com.ibm.wala.ipa.callgraph.impl.Util;
 import com.ibm.wala.ipa.cha.ClassHierarchy;
+import com.ibm.wala.ipa.cha.ClassHierarchyException;
 import com.ibm.wala.ipa.cha.ClassHierarchyFactory;
 import com.ibm.wala.types.MethodReference;
 import com.ibm.wala.util.config.AnalysisScopeReader;
@@ -37,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -52,7 +56,7 @@ public final class WalaCallgraphConstructor implements CallgraphConstructor {
             .getLogger(WalaCallgraphConstructor.class);
 
     @Override
-    public List<ResolvedCall> build(String projectClasspath, String depzClasspath) {
+    public List<ResolvedCall> build(String projectClasspath, String depzClasspath) throws CallgraphException {
         try {
 
             logger.info("Building call graph with project classpath: {}", projectClasspath);
@@ -93,9 +97,9 @@ public final class WalaCallgraphConstructor implements CallgraphConstructor {
 
             return resolveCallTargets(cg);
 
-        } catch (Exception e) {
+        } catch (ClassHierarchyException | IOException | CallGraphBuilderCancelException e) {
             e.printStackTrace();
-            return null;
+            throw new CallgraphException();
         }
     }
 

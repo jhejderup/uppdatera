@@ -17,11 +17,5 @@
  */
 package com.github.jhejderup.callgraph;
 
-public interface ResolvedMethod {
-
-
-    JVMIdentifier getIdentifier();
-
-    MethodScope getContext();
-
+public class CallgraphException extends Exception {
 }
