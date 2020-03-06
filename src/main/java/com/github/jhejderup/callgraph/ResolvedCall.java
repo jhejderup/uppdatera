@@ -40,7 +40,7 @@ public final class ResolvedCall implements Serializable {
 
     @Override
     public String toString() {
-        return getSource().toString() + " -> " + getTarget().toString();
+        return getSource() + " -> " + getTarget();
     }
 
     @Override

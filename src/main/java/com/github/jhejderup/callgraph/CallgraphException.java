@@ -17,5 +17,5 @@
  */
 package com.github.jhejderup.callgraph;
 
-public class CallgraphException extends Exception {
+public final class CallgraphException extends Exception {
 }

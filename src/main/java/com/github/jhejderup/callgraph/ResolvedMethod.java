@@ -17,11 +17,34 @@
  */
 package com.github.jhejderup.callgraph;
 
-public interface ResolvedMethod {
+import com.github.jhejderup.callgraph.wala.WalaResolvedMethod;
+
+import java.util.Objects;
+
+public abstract class ResolvedMethod {
 
 
-    JVMIdentifier getIdentifier();
+    abstract public JVMIdentifier getIdentifier();
 
-    MethodScope getContext();
+    abstract public MethodScope getContext();
+
+    @Override
+    public String toString() {
+        return getIdentifier().toString() + " [" + getContext().name() + "]";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        WalaResolvedMethod that = (WalaResolvedMethod) o;
+        return getIdentifier().equals(that.getIdentifier()) &&
+                getContext() == that.getContext();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getIdentifier(), getContext());
+    }
 
 }
