@@ -25,15 +25,31 @@ public final class ResolvedCall implements Serializable {
     private final ResolvedMethod source;
     private final ResolvedMethod target;
 
+    /**
+     * Class representing a call from one resolved method to another.
+     *
+     * @param source the calling method (caller)
+     * @param target the called method (callee)
+     */
     public ResolvedCall(ResolvedMethod source, ResolvedMethod target) {
         this.source = source;
         this.target = target;
     }
 
+    /**
+     * Returns the calling (source) method.
+     *
+     * @return the source method
+     */
     public ResolvedMethod getSource() {
         return source;
     }
 
+    /**
+     * Returns the called (target) method.
+     *
+     * @return the target method
+     */
     public ResolvedMethod getTarget() {
         return target;
     }
@@ -48,12 +64,11 @@ public final class ResolvedCall implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ResolvedCall that = (ResolvedCall) o;
-        return Objects.equals(source, that.source) &&
-                Objects.equals(target, that.target);
+        return Objects.equals(source, that.source) && Objects.equals(target, that.target);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(source, target);
+        return Objects.hash(this.toString());
     }
 }

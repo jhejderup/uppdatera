@@ -69,8 +69,11 @@ public final class JVMIdentifier {
      * @return the JVMIdentifier
      */
     public static JVMIdentifier fromWalaMethodReference(MethodReference methodReference) {
-        return new JVMIdentifier(methodReference.getDeclaringClass().getName().toString(),
-                methodReference.getName().toString(), methodReference.getDescriptor().toString());
+        return new JVMIdentifier(
+                methodReference.getDeclaringClass().getName().toString(),
+                methodReference.getName().toString(),
+                methodReference.getDescriptor().toString()
+        );
     }
 
     /**
@@ -86,8 +89,11 @@ public final class JVMIdentifier {
                 .map(CtParameter.class::cast).map(arg -> spoonToJVMType(arg.getType(), true))
                 .collect(Collectors.joining(""));
 
-        return new JVMIdentifier(spoonToJVMType(clazz, false), executable.getSimpleName(),
-                "(" + args + ")" + spoonToJVMType(ret, true));
+        return new JVMIdentifier(
+                spoonToJVMType(clazz, false),
+                executable.getSimpleName(),
+                "(" + args + ")" + spoonToJVMType(ret, true)
+        );
     }
 
     private static String spoonToJVMType(CtTypeReference type, boolean isMethodDesc) {

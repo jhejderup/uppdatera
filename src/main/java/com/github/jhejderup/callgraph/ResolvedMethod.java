@@ -21,30 +21,44 @@ import com.github.jhejderup.callgraph.wala.WalaResolvedMethod;
 
 import java.util.Objects;
 
+/**
+ * Represents a resolved method.
+ * <p>
+ * A resolved method is a method of which the JVMIdentifier and the class loader scope have been determined.
+ */
 public abstract class ResolvedMethod {
 
-
+    /**
+     * Returns the JVMIdentifier of this resolved method.
+     *
+     * @return the JVMIdentifier
+     */
     abstract public JVMIdentifier getIdentifier();
 
-    abstract public MethodScope getContext();
+    /**
+     * Returns the class loader scope of this method.
+     *
+     * @return the class loader scope
+     */
+    abstract public MethodScope getScope();
 
     @Override
     public String toString() {
-        return getIdentifier().toString() + " [" + getContext().name() + "]";
+        return getIdentifier().toString() + " [" + getScope().name() + "]";
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        WalaResolvedMethod that = (WalaResolvedMethod) o;
+        if (o == null || !(o instanceof ResolvedMethod)) return false;
+        ResolvedMethod that = (ResolvedMethod) o;
         return getIdentifier().equals(that.getIdentifier()) &&
-                getContext() == that.getContext();
+                getScope().equals(that.getScope());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getIdentifier(), getContext());
+        return Objects.hash(this.toString());
     }
 
 }

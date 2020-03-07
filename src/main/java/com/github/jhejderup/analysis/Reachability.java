@@ -44,7 +44,7 @@ public final class Reachability {
         this.graph = new HashMap<>();
         this.lookup = new HashMap<>();
 
-        cg.stream().filter(call -> call.getTarget().getContext() != MethodScope.PRIMORDIAL).forEach(call -> {
+        cg.stream().filter(call -> call.getTarget().getScope() != MethodScope.PRIMORDIAL).forEach(call -> {
             //populate lookup table
             var target = call.getTarget().getIdentifier();
             var source = call.getSource().getIdentifier();
@@ -76,7 +76,7 @@ public final class Reachability {
 
         var root = this.lookup.get(methodID);
 
-        if (root.getContext() != MethodScope.DEPENDENCY) {
+        if (root.getScope() != MethodScope.DEPENDENCY) {
             logger.error("[search] the function `" + methodID
                     + "` is not a dependency node (e.g., Extension type)");
             return new ArrayList<>();
@@ -98,7 +98,7 @@ public final class Reachability {
             var vertex = this.lookup.get(vertexName);
 
             //is this an application node?
-            if (vertex.getContext() == MethodScope.APPLICATION) {
+            if (vertex.getScope() == MethodScope.APPLICATION) {
                 var appNode = vertex.getIdentifier();
                 if (!appNode.equals(vertexName)) {
                     path.add(vertexName);

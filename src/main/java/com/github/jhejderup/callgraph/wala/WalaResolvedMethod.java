@@ -37,7 +37,7 @@ public final class WalaResolvedMethod extends ResolvedMethod {
     }
 
     @Override
-    public MethodScope getContext() {
+    public MethodScope getScope() {
         return context;
     }
 

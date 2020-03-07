@@ -18,11 +18,11 @@
 package com.github.jhejderup;
 
 import com.github.jhejderup.analysis.Reachability;
+import com.github.jhejderup.artifact.maven.Artifact;
+import com.github.jhejderup.artifact.maven.Coordinate;
 import com.github.jhejderup.callgraph.CallgraphConstructor;
 import com.github.jhejderup.callgraph.CallgraphException;
 import com.github.jhejderup.callgraph.JVMIdentifier;
-import com.github.jhejderup.artifact.maven.Artifact;
-import com.github.jhejderup.artifact.maven.Coordinate;
 import com.github.jhejderup.callgraph.wala.WalaCallgraphConstructor;
 import com.github.jhejderup.diff.ast.AstComperator;
 import com.github.jhejderup.diff.ast.MethodDiff;
@@ -46,7 +46,13 @@ import spoon.reflect.declaration.CtExecutable;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 public class UppdateraMaven {
@@ -102,11 +108,11 @@ public class UppdateraMaven {
         /// 2. Call Graph Generation
         ///
         CallgraphConstructor cgConstructor = new WalaCallgraphConstructor(); // Can be switched to Opal callgraph in the future.
-        var cg = cgConstructor.build(projectClasspath, depzClasspath);
+        var resolvedCalls = cgConstructor.build(projectClasspath, depzClasspath);
 
         logger.info("[Uppdatera] Done setting up call graph");
 
-        var graph = new Reachability(cg);
+        var graph = new Reachability(resolvedCalls);
 
         logger.info("[Uppdatera] Done setting up reachability analysis");
 

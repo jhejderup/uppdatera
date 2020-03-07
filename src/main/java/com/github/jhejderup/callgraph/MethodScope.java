@@ -17,6 +17,15 @@
  */
 package com.github.jhejderup.callgraph;
 
+/**
+ * Class loader method scope.
+ *
+ * <ul>
+ *     <li>APPLICATION - Application scope</li>
+ *     <li>DEPENDENCY - Dependency scope (corresponds to Wala's EXTENSION scope)</li>
+ *     <li>PRIMORDIAL - Scope of java's core classes</li>
+ * </ul>
+ */
 public enum MethodScope {
 
     APPLICATION, DEPENDENCY, PRIMORDIAL, UNKNOWN;

@@ -18,18 +18,27 @@
 package com.github.jhejderup.artifact.maven;
 
 public final class Coordinate {
-  public final String artifactId;
-  public final String groupId;
-  public final String version;
+    public final String artifactId;
+    public final String groupId;
+    public final String version;
 
-  public Coordinate(String groupId, String artifactId, String version) {
-    this.artifactId = artifactId;
-    this.groupId = groupId;
-    this.version = version;
-  }
+    /**
+     * Represents a maven coordinate (groupId + artifactId + version).
+     * <p>
+     * Example of a maven coordinate: groupId:artifactId:version
+     *
+     * @param groupId    the groupId
+     * @param artifactId the artifactId
+     * @param version    the version
+     */
+    public Coordinate(String groupId, String artifactId, String version) {
+        this.artifactId = artifactId;
+        this.groupId = groupId;
+        this.version = version;
+    }
 
-  @Override
-  public String toString() {
-    return groupId + ":" + artifactId + ":" + version;
-  }
+    @Override
+    public String toString() {
+        return groupId + ":" + artifactId + ":" + version;
+    }
 }

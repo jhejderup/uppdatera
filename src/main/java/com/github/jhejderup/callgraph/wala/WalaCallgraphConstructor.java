@@ -19,7 +19,9 @@ package com.github.jhejderup.callgraph.wala;
 
 import com.github.jhejderup.callgraph.CallgraphConstructor;
 import com.github.jhejderup.callgraph.CallgraphException;
+import com.github.jhejderup.callgraph.MethodScope;
 import com.github.jhejderup.callgraph.ResolvedCall;
+import com.github.jhejderup.callgraph.ResolvedMethod;
 import com.ibm.wala.classLoader.CallSiteReference;
 import com.ibm.wala.classLoader.IClass;
 import com.ibm.wala.classLoader.IMethod;
@@ -123,20 +125,25 @@ public final class WalaCallgraphConstructor implements CallgraphConstructor {
             cg.getNodes(srcMref).stream().forEach(cgNode -> itrToStream(cgNode.iterateCallSites())
                     .flatMap(cs -> cg.getPossibleTargets(cgNode, cs).stream()) // get concrete call targets
                     .map(n -> n.getMethod().getReference()).forEach(csMref -> {
-                if (!visited.contains(csMref)) {
-                    workList.add(csMref);
-                    visited.add(csMref);
-                    if (resolveMethod != null) {
-                        ResolvedCall call = new ResolvedCall(
-                                new WalaResolvedMethod(resolveMethod.getReference()),
-                                new WalaResolvedMethod(csMref)
-                        );
-//                        logger.info(call.toString());
-                        calls.add(call);
-                    }
-                }
-            }));
+                        if (!visited.contains(csMref)) {
+                            workList.add(csMref);
+                            visited.add(csMref);
+                            if (resolveMethod != null) {
+                                ResolvedMethod source = new WalaResolvedMethod(resolveMethod.getReference());
+                                ResolvedMethod target = new WalaResolvedMethod(csMref);
+
+                                // Remove methods with primordial scope
+                                // TODO: this might be done more efficiently...
+                                // TODO: potentially also filter out calls FROM primordial scope
+                                if (target.getScope() != MethodScope.PRIMORDIAL) {
+                                    ResolvedCall call = new ResolvedCall(source, target);
+                                    calls.add(call);
+                                }
+                            }
+                        }
+                    }));
         }
+
         return calls;
     }
 

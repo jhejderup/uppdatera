@@ -1,11 +1,8 @@
-package com.github.jhejderup;
+package com.github.jhejderup.diff.file;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.github.jhejderup.diff.file.FileDiff;
-import com.github.jhejderup.diff.file.GitDiffer;
 import org.junit.Test;
 
 import java.io.File;
@@ -15,7 +12,6 @@ import java.util.stream.Collectors;
 public class GitDifferTest {
 
     private Path getFolder(String folder) {
-
         return new File(getClass().getClassLoader().getResource("diff/" + folder).getFile()).toPath();
     }
 
@@ -44,7 +40,7 @@ public class GitDifferTest {
         assertEquals(FileDiff.Change.DELETION, result.get(0).type);
 
         assertTrue(result.get(0).srcFile.get().endsWith("old2/test.txt"));
-        assertFalse(result.get(0).dstFile.isPresent());
+        assertTrue(result.get(0).dstFile.isEmpty());
     }
 
     @Test
@@ -57,7 +53,7 @@ public class GitDifferTest {
         assertEquals(1, result.size());
         assertEquals(FileDiff.Change.ADDITION, result.get(0).type);
 
-        assertFalse(result.get(0).srcFile.isPresent());
+        assertTrue(result.get(0).srcFile.isEmpty());
         assertTrue(result.get(0).dstFile.get().endsWith("old2/test.txt"));
     }
 

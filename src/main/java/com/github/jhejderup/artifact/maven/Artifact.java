@@ -29,52 +29,66 @@ import java.util.Optional;
 
 public final class Artifact implements Package {
 
-  private static Logger     logger = LoggerFactory.getLogger(Artifact.class);
-  private final  Coordinate coord;
+    private static Logger logger = LoggerFactory.getLogger(Artifact.class);
+    private final Coordinate coord;
 
-  public Artifact(Coordinate coord) {
-    this.coord = coord;
-
-  }
-
-  @Override
-  public Optional<Path> getSource() {
-    try {
-      var jarFile = Maven.resolver().resolve(
-          coord.groupId + ":" + coord.artifactId + ":java-source:sources:"
-              + coord.version).withoutTransitivity().asSingleFile();
-      logger.info(
-          "[ShrinkWrap] Downloaded " + jarFile.toString() + " for " + coord);
-
-      Path unzipLocation = Files.createTempDirectory("uppdateratempz");
-      ZipFile zipFile = new ZipFile(jarFile);
-      zipFile.extractAll(unzipLocation.toString());
-      logger.info("[ShrinkWrap] Extracted " + jarFile.toString() + " to "
-          + unzipLocation);
-      return Optional.of(unzipLocation);
-
-    } catch (Exception e) {
-      e.printStackTrace();
-      logger.error(
-          "[ShrinkWrap] Failed to download and unzip sources for " + coord
-              .toString());
-      return Optional.empty();
+    /**
+     * Represents a maven artifact, specified by maven coordinates.
+     *
+     * @param coord the maven coordinates
+     */
+    public Artifact(Coordinate coord) {
+        this.coord = coord;
     }
-  }
 
-  @Override
-  public Optional<Path> getBinary() {
-    try {
-      var jarFile = Maven.resolver()
-          .resolve(coord.groupId + ":" + coord.artifactId + ":" + coord.version)
-          .withoutTransitivity().asSingleFile();
-      logger.info(
-          "[ShrinkWrap] Downloaded " + jarFile.toString() + " for " + coord);
-      return Optional.of(jarFile.toPath());
-    } catch (Exception e) {
-      logger.error(
-          "[ShrinkWrap] Failed to download jar file for" + coord.toString());
-      return Optional.empty();
+    /**
+     * Retrieves and extracts a jarfile containing the sources of this artifact, using Maven API.
+     *
+     * @return the path to the folder containing the unzipped sources of the jarfile.
+     */
+    @Override
+    public Optional<Path> getSource() {
+        try {
+            var jarFile = Maven.resolver().resolve(
+                    coord.groupId + ":" + coord.artifactId + ":java-source:sources:"
+                            + coord.version).withoutTransitivity().asSingleFile();
+            logger.info(
+                    "[ShrinkWrap] Downloaded " + jarFile.toString() + " for " + coord);
+
+            Path unzipLocation = Files.createTempDirectory("uppdateratempz");
+            ZipFile zipFile = new ZipFile(jarFile);
+            zipFile.extractAll(unzipLocation.toString());
+            logger.info("[ShrinkWrap] Extracted " + jarFile.toString() + " to "
+                    + unzipLocation);
+            return Optional.of(unzipLocation);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error(
+                    "[ShrinkWrap] Failed to download and unzip sources for " + coord
+                            .toString());
+            return Optional.empty();
+        }
     }
-  }
+
+    /**
+     * Retrieves a jarfile containing the binaries of this artifact, using Maven API.
+     *
+     * @return the path to the jarfile.
+     */
+    @Override
+    public Optional<Path> getBinary() {
+        try {
+            var jarFile = Maven.resolver()
+                    .resolve(coord.groupId + ":" + coord.artifactId + ":" + coord.version)
+                    .withoutTransitivity().asSingleFile();
+            logger.info(
+                    "[ShrinkWrap] Downloaded " + jarFile.toString() + " for " + coord);
+            return Optional.of(jarFile.toPath());
+        } catch (Exception e) {
+            logger.error(
+                    "[ShrinkWrap] Failed to download jar file for" + coord.toString());
+            return Optional.empty();
+        }
+    }
 }
