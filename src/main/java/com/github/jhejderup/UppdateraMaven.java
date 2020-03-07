@@ -17,7 +17,7 @@
  */
 package com.github.jhejderup;
 
-import com.github.jhejderup.analysis.Reachability;
+import com.github.jhejderup.analysis.CallgraphSearch;
 import com.github.jhejderup.artifact.maven.Artifact;
 import com.github.jhejderup.artifact.maven.Coordinate;
 import com.github.jhejderup.callgraph.CallgraphConstructor;
@@ -112,7 +112,7 @@ public class UppdateraMaven {
 
         logger.info("[Uppdatera] Done setting up call graph");
 
-        var graph = new Reachability(resolvedCalls);
+        var callgraphSearch = new CallgraphSearch(resolvedCalls);
 
         logger.info("[Uppdatera] Done setting up reachability analysis");
 
@@ -149,7 +149,7 @@ public class UppdateraMaven {
         ///
         var result = methodDiff.stream().map(md -> md.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> {
-                    var path = graph.search(e.getKey());
+                    var path = callgraphSearch.retrievePath(e.getKey());
                     return new ResultData(e.getKey(), path, e.getValue());
                 }))).collect(Collectors.toList());
 

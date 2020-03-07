@@ -33,14 +33,17 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public final class Reachability {
+/**
+ * A data structure for looking up
+ */
+public final class CallgraphSearch {
 
     private static Logger logger = LoggerFactory
-            .getLogger(Reachability.class);
+            .getLogger(CallgraphSearch.class);
     private final Map<ResolvedMethod, List<ResolvedMethod>> graph;
     private final Map<JVMIdentifier, ResolvedMethod> lookup;
 
-    public Reachability(List<ResolvedCall> cg) {
+    public CallgraphSearch(List<ResolvedCall> cg) {
         this.graph = new HashMap<>();
         this.lookup = new HashMap<>();
 
@@ -64,7 +67,20 @@ public final class Reachability {
         });
     }
 
-    public List<JVMIdentifier> search(JVMIdentifier methodID) {
+    /**
+     * Retrieve a (reverse) path from a dependency method to an application method.
+     * <p>
+     * This method returns an empty list if:
+     * <ul>
+     *     <li>The provided dependency method is not called by any application method</li>
+     *     <li>The provided method is not a dependency method</li>
+     *     <li>There is no path</li>
+     * </ul>
+     *
+     * @param methodID the identifier of a dependency method
+     * @return the (reverse) path from the dependency method to the (first) application method that uses it
+     */
+    public List<JVMIdentifier> retrievePath(JVMIdentifier methodID) {
         ///
         /// Validate node
         ///
