@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A data structure for looking up
+ * A data structure for looking up paths from dependency methods to application methods.
  */
 public final class CallgraphSearch {
 
@@ -85,16 +85,14 @@ public final class CallgraphSearch {
         /// Validate node
         ///
         if (!this.lookup.containsKey(methodID)) {
-            logger.info(
-                    "[search] the function `" + methodID + "` is not called by the user");
+            logger.info("[search] the function `" + methodID + "` is not called by the user");
             return new ArrayList<>();
         }
 
         var root = this.lookup.get(methodID);
 
         if (root.getScope() != MethodScope.DEPENDENCY) {
-            logger.error("[search] the function `" + methodID
-                    + "` is not a dependency node (e.g., Extension type)");
+            logger.error("[search] the function `" + methodID + "` is not a dependency node (e.g., Extension type)");
             return new ArrayList<>();
         }
 
@@ -113,7 +111,7 @@ public final class CallgraphSearch {
             var vertexName = path.get(path.size() - 1);
             var vertex = this.lookup.get(vertexName);
 
-            //is this an application node?
+            // Is this an application node?
             if (vertex.getScope() == MethodScope.APPLICATION) {
                 var appNode = vertex.getIdentifier();
                 if (!appNode.equals(vertexName)) {
@@ -122,7 +120,7 @@ public final class CallgraphSearch {
                 path.add(vertex.getIdentifier());
                 return path;
             } else if (!visited.contains(vertexName)) {
-                //is it the last node? (e.g., has no adjacent nodes), then none to queue
+                // Is it the last node? (e.g., has no adjacent nodes), then none to queue
                 if (this.graph.containsKey(vertex)) {
                     var neighbours = this.graph.get(vertex);
                     for (var neighbour : neighbours) {
