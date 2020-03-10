@@ -12,6 +12,7 @@ import org.opalj.br.instructions.INVOKEINTERFACE;
 import org.opalj.br.instructions.INVOKESPECIAL;
 import org.opalj.br.instructions.INVOKESTATIC;
 import org.opalj.br.instructions.INVOKEVIRTUAL;
+import org.opalj.br.reader.Java8Framework$;
 import org.opalj.br.reader.Java9Framework$;
 import scala.Tuple2;
 import scala.collection.JavaConverters;
@@ -40,8 +41,8 @@ public final class OpalCallgraphConstructor implements CallgraphConstructor {
             libraryClassFiles.add(new File(depName));
         }
 
-        var projectSources = Java9Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(projectClassFiles), Java9Framework$.MODULE$.defaultExceptionHandler());
-        var librarySources = Java9Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(libraryClassFiles), Java9Framework$.MODULE$.defaultExceptionHandler());
+        var projectSources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(projectClassFiles), Java9Framework$.MODULE$.defaultExceptionHandler());
+        var librarySources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(libraryClassFiles), Java9Framework$.MODULE$.defaultExceptionHandler());
 
         project = Project.apply(
                 JavaConverters.asScalaSet(JavaConverters.asJavaCollection(projectSources.toList()).stream().map(t -> new Tuple2<ClassFile, URL>((ClassFile) t._1, t._2)).collect(Collectors.toSet())).toTraversable(),
