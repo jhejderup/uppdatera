@@ -3,6 +3,7 @@ package com.github.jhejderup.callgraph.opal;
 import com.github.jhejderup.callgraph.CallgraphConstructor;
 import com.github.jhejderup.callgraph.CallgraphException;
 import com.github.jhejderup.callgraph.ResolvedCall;
+import com.github.jhejderup.callgraph.ResolvedMethod;
 import com.google.common.collect.Lists;
 import org.opalj.br.ClassFile;
 import org.opalj.br.Method;
@@ -55,20 +56,25 @@ public final class OpalCallgraphConstructor implements CallgraphConstructor {
 
         var result = new ArrayList<ResolvedCall>();
 
+        var visited = new HashSet<Method>();
+
         while (!workList.isEmpty()) {
             var srcMtd = workList.pop();
             Set<Method> callTargets = resolveDirectMethodCallTargets(srcMtd);
 
             callTargets.forEach(tgtMtd -> {
-                var resSrc = new OpalResolvedMethod(srcMtd, project);
-                var resTgt = new OpalResolvedMethod(tgtMtd, project);
+                if (!visited.contains(tgtMtd)) {
+                    visited.add(tgtMtd);
+                    workList.add(tgtMtd);
 
-                var call = new ResolvedCall(resSrc, resTgt);
-                if (!result.contains(call))
+                    var resSrc = new OpalResolvedMethod(srcMtd, project);
+                    var resTgt = new OpalResolvedMethod(tgtMtd, project);
+
+                    var call = new ResolvedCall(resSrc, resTgt);
+
                     result.add(call);
+                }
             });
-
-            workList.addAll(callTargets);
         }
 
         return result;
