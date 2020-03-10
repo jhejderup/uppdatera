@@ -18,6 +18,7 @@
 package com.github.jhejderup.callgraph;
 
 import com.ibm.wala.types.MethodReference;
+import org.opalj.br.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spoon.reflect.declaration.CtExecutable;
@@ -60,6 +61,15 @@ public final class JVMIdentifier {
         this.clazzName = clazzName;
         this.methodName = methodName.replace("<", "&lt;").replace(">", "&gt;");
         this.methodDesc = methodDesc;
+    }
+
+    public static JVMIdentifier fromOpalMethod(Method method) {
+        var className = method.declaringClassFile().thisType().toJVMTypeName();
+        return new JVMIdentifier(
+                className.substring(0, className.length()-1),
+                method.name(),
+                method.descriptor().toJVMDescriptor()
+        );
     }
 
     /**

@@ -23,6 +23,7 @@ import com.github.jhejderup.artifact.maven.Coordinate;
 import com.github.jhejderup.callgraph.CallgraphConstructor;
 import com.github.jhejderup.callgraph.CallgraphException;
 import com.github.jhejderup.callgraph.JVMIdentifier;
+import com.github.jhejderup.callgraph.opal.OpalCallgraphConstructor;
 import com.github.jhejderup.callgraph.wala.WalaCallgraphConstructor;
 import com.github.jhejderup.diff.ast.AstComperator;
 import com.github.jhejderup.diff.ast.MethodDiff;
@@ -107,7 +108,8 @@ public class UppdateraMaven {
         ///
         /// 2. Call Graph Generation
         ///
-        CallgraphConstructor cgConstructor = new WalaCallgraphConstructor(); // Can be switched to Opal callgraph in the future.
+//        CallgraphConstructor cgConstructor = new WalaCallgraphConstructor(); // Can be switched to Opal callgraph in the future.
+        CallgraphConstructor cgConstructor = new OpalCallgraphConstructor();
         var resolvedCalls = cgConstructor.build(projectClasspath, depzClasspath);
 
         logger.info("[Uppdatera] Done setting up call graph");
