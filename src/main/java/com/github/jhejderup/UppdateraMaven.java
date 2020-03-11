@@ -108,15 +108,9 @@ public class UppdateraMaven {
         ///
         /// 2. Call Graph Generation
         ///
-        CallgraphConstructor cgConstructor1 = new WalaCallgraphConstructor();
-        var resolvedCalls = cgConstructor1.build(projectClasspath, depzClasspath);
-        System.out.println(resolvedCalls);
 
-        CallgraphConstructor cgConstructor2 = new OpalCallgraphConstructor();
-        resolvedCalls = cgConstructor2.build(projectClasspath, depzClasspath);
-        System.out.println(resolvedCalls);
-
-        System.exit(0);
+        CallgraphConstructor cgConstructor = new OpalCallgraphConstructor();
+        var resolvedCalls = cgConstructor.build(projectClasspath, depzClasspath);
 
         logger.info("[Uppdatera] Done setting up call graph");
 
