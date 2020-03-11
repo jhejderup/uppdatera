@@ -3,17 +3,12 @@ package com.github.jhejderup.callgraph.opal;
 import com.github.jhejderup.callgraph.CallgraphConstructor;
 import com.github.jhejderup.callgraph.CallgraphException;
 import com.github.jhejderup.callgraph.ResolvedCall;
-import com.github.jhejderup.callgraph.ResolvedMethod;
 import com.google.common.collect.Lists;
 import org.opalj.br.ClassFile;
 import org.opalj.br.Method;
 import org.opalj.br.analyses.Project;
-import org.opalj.br.instructions.INVOKEINTERFACE;
-import org.opalj.br.instructions.INVOKESPECIAL;
-import org.opalj.br.instructions.INVOKESTATIC;
-import org.opalj.br.instructions.INVOKEVIRTUAL;
+import org.opalj.br.instructions.MethodInvocationInstruction;
 import org.opalj.br.reader.Java8Framework$;
-import org.opalj.br.reader.Java9Framework$;
 import scala.Tuple2;
 import scala.collection.JavaConverters;
 
@@ -41,8 +36,8 @@ public final class OpalCallgraphConstructor implements CallgraphConstructor {
             libraryClassFiles.add(new File(depName));
         }
 
-        var projectSources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(projectClassFiles), Java9Framework$.MODULE$.defaultExceptionHandler());
-        var librarySources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(libraryClassFiles), Java9Framework$.MODULE$.defaultExceptionHandler());
+        var projectSources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(projectClassFiles), Java8Framework$.MODULE$.defaultExceptionHandler());
+        var librarySources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(libraryClassFiles), Java8Framework$.MODULE$.defaultExceptionHandler());
 
         project = Project.apply(
                 JavaConverters.asScalaSet(JavaConverters.asJavaCollection(projectSources.toList()).stream().map(t -> new Tuple2<ClassFile, URL>((ClassFile) t._1, t._2)).collect(Collectors.toSet())).toTraversable(),
@@ -89,38 +84,15 @@ public final class OpalCallgraphConstructor implements CallgraphConstructor {
         }
 
         for (var i : method.body().get().instructions()) {
-            if (i != null && i.isInvocationInstruction()) {
-                if (i instanceof INVOKEVIRTUAL) {
-                    var invoke = (INVOKEVIRTUAL) i;
+            if (i != null && i.isMethodInvocationInstruction()) {
+                MethodInvocationInstruction invoke = i.asMethodInvocationInstruction();
 
-                    var targets = project.resolveAllMethodReferences(invoke.declaringClass(), invoke.name(), invoke.methodDescriptor());
+                var targets = project.resolveAllMethodReferences(invoke.declaringClass(), invoke.name(), invoke.methodDescriptor());
 
-                    result.addAll(JavaConverters.setAsJavaSet(targets));
-                } else if (i instanceof INVOKEINTERFACE) {
-                    var invoke = (INVOKEINTERFACE) i;
-
-                    var targets = project.interfaceCall(method.declaringClassFile().thisType(), invoke.name(), invoke.methodDescriptor());
-
-                    result.addAll(JavaConverters.setAsJavaSet(targets));
-                } else if (i instanceof INVOKESTATIC) {
-                    var invoke = (INVOKESTATIC) i;
-
-                    var target = project.staticCall(invoke);
-
-                    if (target.hasValue()) {
-                        result.add(target.value());
-                    }
-                } else if (i instanceof INVOKESPECIAL) {
-                    var invoke = (INVOKESPECIAL) i;
-
-                    var target = project.specialCall(invoke.declaringClass().asObjectType(), invoke);
-
-                    if (target.hasValue()) {
-                        result.add(target.value());
-                    }
-                }
+                result.addAll(JavaConverters.setAsJavaSet(targets));
             }
         }
         return result;
     }
+
 }
