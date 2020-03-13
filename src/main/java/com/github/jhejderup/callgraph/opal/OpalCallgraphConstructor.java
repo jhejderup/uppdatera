@@ -1,23 +1,34 @@
 package com.github.jhejderup.callgraph.opal;
 
+import static scala.collection.JavaConverters.asJavaCollection;
+import static scala.collection.JavaConverters.asJavaIterable;
+import static scala.collection.JavaConverters.asScalaSet;
+import static scala.collection.JavaConverters.collectionAsScalaIterable;
+
 import com.github.jhejderup.callgraph.CallgraphConstructor;
 import com.github.jhejderup.callgraph.CallgraphException;
 import com.github.jhejderup.callgraph.ResolvedCall;
 import com.google.common.collect.Lists;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigValueFactory;
+import org.opalj.ai.analyses.cg.CHACallGraphAlgorithmConfiguration;
+import org.opalj.ai.analyses.cg.CallGraphFactory;
+import org.opalj.ai.analyses.cg.ComputedCallGraph;
+import org.opalj.bi.reader.ClassFileReader;
 import org.opalj.br.ClassFile;
 import org.opalj.br.Method;
 import org.opalj.br.analyses.Project;
-import org.opalj.br.instructions.MethodInvocationInstruction;
-import org.opalj.br.reader.Java8Framework$;
+import org.opalj.br.reader.Java9Framework$;
 import scala.Tuple2;
+import scala.collection.Iterator;
 import scala.collection.JavaConverters;
+import scala.collection.Set;
 
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
@@ -36,63 +47,115 @@ public final class OpalCallgraphConstructor implements CallgraphConstructor {
             libraryClassFiles.add(new File(depName));
         }
 
-        var projectSources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(projectClassFiles), Java8Framework$.MODULE$.defaultExceptionHandler());
-        var librarySources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(libraryClassFiles), Java8Framework$.MODULE$.defaultExceptionHandler());
+        var baseConfig = ConfigFactory.load().withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis", ConfigValueFactory.fromAnyRef(true));
+        var config = baseConfig.withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis", ConfigValueFactory.fromAnyRef("org.opalj.br.analyses.cg.LibraryInstantiatedTypesFinder"));
+
+        var exceptionHandler = ClassFileReader.defaultExceptionHandler();
+        var logContext = Java9Framework$.MODULE$.logContext();
+
+        var cfReader = Project.JavaClassFileReader(logContext, config);
+
+        var projectSources = cfReader.AllClassFiles(collectionAsScalaIterable(projectClassFiles), exceptionHandler);
+        var librarySources = cfReader.AllClassFiles(collectionAsScalaIterable(libraryClassFiles), exceptionHandler);
+
+//        var projectSources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(projectClassFiles), Java8Framework$.MODULE$.defaultExceptionHandler());
+//        var librarySources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(libraryClassFiles), Java8Framework$.MODULE$.defaultExceptionHandler());
+
+//        project = Project.apply(projectSources, librarySources, true);
 
         project = Project.apply(
-                JavaConverters.asScalaSet(JavaConverters.asJavaCollection(projectSources.toList()).stream().map(t -> new Tuple2<ClassFile, URL>((ClassFile) t._1, t._2)).collect(Collectors.toSet())).toTraversable(),
-                JavaConverters.asScalaSet(JavaConverters.asJavaCollection(librarySources.toList()).stream().map(t -> new Tuple2<ClassFile, URL>((ClassFile) t._1, t._2)).collect(Collectors.toSet())).toTraversable(),
+                asScalaSet(asJavaCollection(projectSources.toList()).stream().map(t -> new Tuple2<ClassFile, URL>((ClassFile) t._1, t._2)).collect(Collectors.toSet())).toTraversable(),
+                asScalaSet(asJavaCollection(librarySources.toList()).stream().map(t -> new Tuple2<ClassFile, URL>((ClassFile) t._1, t._2)).collect(Collectors.toSet())).toTraversable(),
                 false);
 
-        // Collect entryPoints
-        var entryPoints = JavaConverters.asJavaCollection(project.allProjectClassFiles().toStream().flatten(ClassFile::methodsWithBody));
+        var entryPoints = findEntryPoints(asJavaIterable(project.allProjectClassFiles().toStream().flatten(cf -> (Iterator<Method>) cf.methodsWithBody().map(t -> t._1))));
 
+        var cg = CallGraphFactory.create(project, () -> entryPoints, new CHACallGraphAlgorithmConfiguration(project, true));
+
+        return resolveCallTargets(cg);
+    }
+
+    private List<ResolvedCall> resolveCallTargets(ComputedCallGraph cg) {
         Stack<Method> workList = new Stack<>();
-        workList.addAll(entryPoints);
+        workList.addAll(asJavaCollection(cg.entryPoints().apply()));
 
         var result = new ArrayList<ResolvedCall>();
 
         var visited = new HashSet<Method>();
 
         while (!workList.isEmpty()) {
-            var srcMtd = workList.pop();
-            Set<Method> callTargets = resolveDirectMethodCallTargets(srcMtd);
+            var source = workList.pop();
 
-            callTargets.forEach(tgtMtd -> {
-                if (!visited.contains(tgtMtd)) {
-                    visited.add(tgtMtd);
-                    workList.add(tgtMtd);
+            final var targetsMap = cg.callGraph().calls((source));
+            if (targetsMap != null && !targetsMap.isEmpty()) {
+                for (final var keyValue : JavaConverters.asJavaIterable(targetsMap)) {
+                    for (final var target : JavaConverters.asJavaIterable(keyValue._2())) {
+                        if (!visited.contains(target)) {
+                            visited.add(target);
+                            workList.add(target);
+                            var resSrc = new OpalResolvedMethod(source, project);
+                            var resTgt = new OpalResolvedMethod(target, project);
 
-                    var resSrc = new OpalResolvedMethod(srcMtd, project);
-                    var resTgt = new OpalResolvedMethod(tgtMtd, project);
+                            var call = new ResolvedCall(resSrc, resTgt);
 
-                    var call = new ResolvedCall(resSrc, resTgt);
-
-                    result.add(call);
+                            result.add(call);
+                        }
+                    }
                 }
-            });
+            }
+//            callTargets.forEach(tgtMtd -> {
+//                if (!visited.contains(tgtMtd)) {
+//                    visited.add(tgtMtd);
+//                    workList.add(tgtMtd);
+//
+//                    var resSrc = new OpalResolvedMethod(srcMtd, project);
+//                    var resTgt = new OpalResolvedMethod(tgtMtd, project);
+//
+//                    var call = new ResolvedCall(resSrc, resTgt);
+//
+//                    result.add(call);
+//                }
+//            });
         }
-
         return result;
     }
 
-    private Set<Method> resolveDirectMethodCallTargets(Method method) {
-        Set<Method> result = new HashSet<>();
+    /**
+     * Finds non abstract and non private methods of the artifact as entrypoints for call graph
+     * generation.
+     *
+     * @param methods are all of the {@link org.opalj.br.Method} in an OPAL-loaded project.
+     * @return An {@link Iterable} of entrypoints to be consumed by scala-written OPAL.
+     */
+    public static scala.collection.Iterable<Method> findEntryPoints(final Iterable<Method> methods) {
+        final List<org.opalj.br.Method> result = new ArrayList<>();
 
-        if (method.body().isEmpty()) {
-            return result;
-        }
-
-        for (var i : method.body().get().instructions()) {
-            if (i != null && i.isMethodInvocationInstruction()) {
-                MethodInvocationInstruction invoke = i.asMethodInvocationInstruction();
-
-                var targets = project.resolveAllMethodReferences(invoke.declaringClass(), invoke.name(), invoke.methodDescriptor());
-
-                result.addAll(JavaConverters.setAsJavaSet(targets));
+        for (final var method : methods) {
+            if (!(method.isAbstract()) && !(method.isPrivate())) {
+                result.add(method);
             }
         }
-        return result;
+        return JavaConverters.collectionAsScalaIterable(result);
+
     }
+
+//    private Set<Method> resolveDirectMethodCallTargets(Method method) {
+//        Set<Method> result = new HashSet<>();
+//
+//        if (method.body().isEmpty()) {
+//            return result;
+//        }
+//
+//        for (var i : method.body().get().instructions()) {
+//            if (i != null && i.isMethodInvocationInstruction()) {
+//                MethodInvocationInstruction invoke = i.asMethodInvocationInstruction();
+//
+//                var targets = project.resolveAllMethodReferences(invoke.declaringClass(), invoke.name(), invoke.methodDescriptor());
+//
+//                result.addAll(setAsJavaSet(targets));
+//            }
+//        }
+//        return result;
+//    }
 
 }
