@@ -8,6 +8,9 @@ import org.junit.Test;
 /**
  * Test suite for testing simple use cases of the CallgraphConstructor.
  */
+// TODO: write test for polymorphism (abstract classes + interfaces)
+// TODO: write test for calling static methods
+// TODO: write test with lambda expression
 public abstract class CallgraphConstructorTest {
 
     /**

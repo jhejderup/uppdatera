@@ -35,7 +35,7 @@ public final class OpalCallgraphConstructor implements CallgraphConstructor {
     private Project<URL> project;
 
     @Override
-    public List<ResolvedCall> build(String projectClassPath, String dependencyClassPath) throws CallgraphException {
+    public List<ResolvedCall> build(String projectClassPath, String dependencyClassPath) {
         List<File> projectClassFiles = Lists.newArrayList(new File(projectClassPath));
 
         String[] depNames = dependencyClassPath.split(":");
@@ -52,11 +52,6 @@ public final class OpalCallgraphConstructor implements CallgraphConstructor {
 
         var projectSources = cfReader.AllClassFiles(collectionAsScalaIterable(projectClassFiles), exceptionHandler);
         var librarySources = cfReader.AllClassFiles(collectionAsScalaIterable(libraryClassFiles), exceptionHandler);
-
-//        var projectSources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(projectClassFiles), exceptionHandler);
-//        var librarySources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(libraryClassFiles), exceptionHandler);
-
-//        project = Project.apply(projectSources, librarySources, true);
 
         project = Project.apply(
                 asScalaSet(asJavaCollection(projectSources.toList()).stream().map(t -> new Tuple2<ClassFile, URL>((ClassFile) t._1, t._2)).collect(Collectors.toSet())).toTraversable(),
@@ -125,24 +120,5 @@ public final class OpalCallgraphConstructor implements CallgraphConstructor {
         return JavaConverters.collectionAsScalaIterable(result);
 
     }
-
-//    private Set<Method> resolveDirectMethodCallTargets(Method method) {
-//        Set<Method> result = new HashSet<>();
-//
-//        if (method.body().isEmpty()) {
-//            return result;
-//        }
-//
-//        for (var i : method.body().get().instructions()) {
-//            if (i != null && i.isMethodInvocationInstruction()) {
-//                MethodInvocationInstruction invoke = i.asMethodInvocationInstruction();
-//
-//                var targets = project.resolveAllMethodReferences(invoke.declaringClass(), invoke.name(), invoke.methodDescriptor());
-//
-//                result.addAll(setAsJavaSet(targets));
-//            }
-//        }
-//        return result;
-//    }
 
 }
