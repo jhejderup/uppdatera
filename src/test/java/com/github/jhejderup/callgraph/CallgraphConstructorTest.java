@@ -57,8 +57,6 @@ public abstract class CallgraphConstructorTest {
         // Run callgraph constructor
         var resolvedCalls = getConstructor().build(projectClasspath, dependenciesClasspath);
 
-        System.out.println(resolvedCalls);
-
         // Make assertions
         assertEquals(3, resolvedCalls.size());
         assertTrue(resolvedCalls.contains(call1));
@@ -94,7 +92,6 @@ public abstract class CallgraphConstructorTest {
 
         // Run callgraph constructor
         var resolvedCalls = getConstructor().build(projectClasspath, dependenciesClasspath);
-        System.out.println(resolvedCalls);
 
         // Make assertions
         assertEquals(5, resolvedCalls.size());

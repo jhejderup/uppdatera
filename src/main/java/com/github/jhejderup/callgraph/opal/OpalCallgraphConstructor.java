@@ -10,7 +10,6 @@ import com.github.jhejderup.callgraph.CallgraphException;
 import com.github.jhejderup.callgraph.ResolvedCall;
 import com.google.common.collect.Lists;
 import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.ConfigValueFactory;
 import org.opalj.ai.analyses.cg.CHACallGraphAlgorithmConfiguration;
 import org.opalj.ai.analyses.cg.CallGraphFactory;
 import org.opalj.ai.analyses.cg.ComputedCallGraph;
@@ -22,7 +21,6 @@ import org.opalj.br.reader.Java9Framework$;
 import scala.Tuple2;
 import scala.collection.Iterator;
 import scala.collection.JavaConverters;
-import scala.collection.Set;
 
 import java.io.File;
 import java.net.URL;
@@ -47,26 +45,28 @@ public final class OpalCallgraphConstructor implements CallgraphConstructor {
             libraryClassFiles.add(new File(depName));
         }
 
-        var baseConfig = ConfigFactory.load().withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis", ConfigValueFactory.fromAnyRef(true));
-        var config = baseConfig.withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis", ConfigValueFactory.fromAnyRef("org.opalj.br.analyses.cg.LibraryInstantiatedTypesFinder"));
-
         var exceptionHandler = ClassFileReader.defaultExceptionHandler();
         var logContext = Java9Framework$.MODULE$.logContext();
-
+        var config = ConfigFactory.load("reference2.conf");
         var cfReader = Project.JavaClassFileReader(logContext, config);
 
         var projectSources = cfReader.AllClassFiles(collectionAsScalaIterable(projectClassFiles), exceptionHandler);
         var librarySources = cfReader.AllClassFiles(collectionAsScalaIterable(libraryClassFiles), exceptionHandler);
 
-//        var projectSources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(projectClassFiles), Java8Framework$.MODULE$.defaultExceptionHandler());
-//        var librarySources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(libraryClassFiles), Java8Framework$.MODULE$.defaultExceptionHandler());
+//        var projectSources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(projectClassFiles), exceptionHandler);
+//        var librarySources = Java8Framework$.MODULE$.AllClassFiles(JavaConverters.collectionAsScalaIterable(libraryClassFiles), exceptionHandler);
 
 //        project = Project.apply(projectSources, librarySources, true);
 
         project = Project.apply(
                 asScalaSet(asJavaCollection(projectSources.toList()).stream().map(t -> new Tuple2<ClassFile, URL>((ClassFile) t._1, t._2)).collect(Collectors.toSet())).toTraversable(),
                 asScalaSet(asJavaCollection(librarySources.toList()).stream().map(t -> new Tuple2<ClassFile, URL>((ClassFile) t._1, t._2)).collect(Collectors.toSet())).toTraversable(),
-                false);
+                false,
+                new scala.collection.immutable.HashSet<>(),
+                (lc, ex) -> null,
+                config,
+                logContext
+        );
 
         var entryPoints = findEntryPoints(asJavaIterable(project.allProjectClassFiles().toStream().flatten(cf -> (Iterator<Method>) cf.methodsWithBody().map(t -> t._1))));
 
@@ -103,19 +103,6 @@ public final class OpalCallgraphConstructor implements CallgraphConstructor {
                     }
                 }
             }
-//            callTargets.forEach(tgtMtd -> {
-//                if (!visited.contains(tgtMtd)) {
-//                    visited.add(tgtMtd);
-//                    workList.add(tgtMtd);
-//
-//                    var resSrc = new OpalResolvedMethod(srcMtd, project);
-//                    var resTgt = new OpalResolvedMethod(tgtMtd, project);
-//
-//                    var call = new ResolvedCall(resSrc, resTgt);
-//
-//                    result.add(call);
-//                }
-//            });
         }
         return result;
     }
