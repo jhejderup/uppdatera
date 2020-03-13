@@ -27,13 +27,16 @@ import spoon.reflect.declaration.CtType;
 import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.reference.CtTypeReference;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
  * JVMIdentifier is the common type that we can use to compare method representations from different libraries
- * (such as Wala and Spoon).
+ * (such as Wala, Opal and Spoon).
  */
 public final class JVMIdentifier {
 
@@ -63,6 +66,12 @@ public final class JVMIdentifier {
         this.methodDesc = methodDesc;
     }
 
+    /**
+     * Convert a Method (Opal) to a JVMIdentifier
+     *
+     * @param method the Opal Method
+     * @return the JVM identifier
+     */
     public static JVMIdentifier fromOpalMethod(Method method) {
         var className = method.declaringClassFile().thisType().toJVMTypeName();
         return new JVMIdentifier(
@@ -76,7 +85,7 @@ public final class JVMIdentifier {
      * Convert a MethodReference (Wala) to a JVMIdentifier.
      *
      * @param methodReference the Wala MethodReference
-     * @return the JVMIdentifier
+     * @return the JVM identifier
      */
     public static JVMIdentifier fromWalaMethodReference(MethodReference methodReference) {
         return new JVMIdentifier(
@@ -90,7 +99,7 @@ public final class JVMIdentifier {
      * Convert a CtExecutable (from Spoon) to a JVMIdentifier.
      *
      * @param executable the Spoon CtExecutable
-     * @return the JVMIdentifier
+     * @return the JVM identifier
      */
     public static JVMIdentifier fromSpoonExecutable(CtExecutable executable) {
         var clazz = ((CtType) (executable.getParent())).getReference();
@@ -125,6 +134,11 @@ public final class JVMIdentifier {
         return JVMType.toString();
     }
 
+    /**
+     * Get the method signature.
+     *
+     * @return the method signature
+     */
     public String getSignature() {
         return String.format("%s%s", this.methodName, this.methodDesc);
     }

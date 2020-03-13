@@ -17,8 +17,6 @@
  */
 package com.github.jhejderup.callgraph;
 
-import com.github.jhejderup.callgraph.wala.WalaResolvedMethod;
-
 import java.util.Objects;
 
 /**

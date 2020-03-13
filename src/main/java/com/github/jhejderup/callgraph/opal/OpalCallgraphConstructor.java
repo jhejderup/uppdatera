@@ -6,7 +6,6 @@ import static scala.collection.JavaConverters.asScalaSet;
 import static scala.collection.JavaConverters.collectionAsScalaIterable;
 
 import com.github.jhejderup.callgraph.CallgraphConstructor;
-import com.github.jhejderup.callgraph.CallgraphException;
 import com.github.jhejderup.callgraph.ResolvedCall;
 import com.google.common.collect.Lists;
 import com.typesafe.config.ConfigFactory;
@@ -32,8 +31,6 @@ import java.util.stream.Collectors;
 
 public final class OpalCallgraphConstructor implements CallgraphConstructor {
 
-    private Project<URL> project;
-
     @Override
     public List<ResolvedCall> build(String projectClassPath, String dependencyClassPath) {
         List<File> projectClassFiles = Lists.newArrayList(new File(projectClassPath));
@@ -53,7 +50,7 @@ public final class OpalCallgraphConstructor implements CallgraphConstructor {
         var projectSources = cfReader.AllClassFiles(collectionAsScalaIterable(projectClassFiles), exceptionHandler);
         var librarySources = cfReader.AllClassFiles(collectionAsScalaIterable(libraryClassFiles), exceptionHandler);
 
-        project = Project.apply(
+        Project<URL> project = Project.apply(
                 asScalaSet(asJavaCollection(projectSources.toList()).stream().map(t -> new Tuple2<ClassFile, URL>((ClassFile) t._1, t._2)).collect(Collectors.toSet())).toTraversable(),
                 asScalaSet(asJavaCollection(librarySources.toList()).stream().map(t -> new Tuple2<ClassFile, URL>((ClassFile) t._1, t._2)).collect(Collectors.toSet())).toTraversable(),
                 false,
@@ -70,6 +67,12 @@ public final class OpalCallgraphConstructor implements CallgraphConstructor {
         return resolveCallTargets(cg);
     }
 
+    /**
+     * Create a list of {@link ResolvedCall}s based on an OPAL {@link ComputedCallGraph}.
+     *
+     * @param cg the callgraph
+     * @return the list of resolved calls
+     */
     private List<ResolvedCall> resolveCallTargets(ComputedCallGraph cg) {
         Stack<Method> workList = new Stack<>();
         workList.addAll(asJavaCollection(cg.entryPoints().apply()));
@@ -88,8 +91,8 @@ public final class OpalCallgraphConstructor implements CallgraphConstructor {
                         if (!visited.contains(target)) {
                             visited.add(target);
                             workList.add(target);
-                            var resSrc = new OpalResolvedMethod(source, project);
-                            var resTgt = new OpalResolvedMethod(target, project);
+                            var resSrc = new OpalResolvedMethod(source, cg.callGraph().project());
+                            var resTgt = new OpalResolvedMethod(target, cg.callGraph().project());
 
                             var call = new ResolvedCall(resSrc, resTgt);
 
@@ -109,7 +112,7 @@ public final class OpalCallgraphConstructor implements CallgraphConstructor {
      * @param methods are all of the {@link org.opalj.br.Method} in an OPAL-loaded project.
      * @return An {@link Iterable} of entrypoints to be consumed by scala-written OPAL.
      */
-    public static scala.collection.Iterable<Method> findEntryPoints(final Iterable<Method> methods) {
+    private static scala.collection.Iterable<Method> findEntryPoints(final Iterable<Method> methods) {
         final List<org.opalj.br.Method> result = new ArrayList<>();
 
         for (final var method : methods) {

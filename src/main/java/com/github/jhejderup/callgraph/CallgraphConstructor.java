@@ -21,6 +21,16 @@ import java.util.List;
 
 public interface CallgraphConstructor {
 
+    /**
+     * Builds the callgraph of a project and it's dependencies, with all public non-abstract non-private methods
+     * in the project as entry points. The resulting callgraph is used to create a list of {@link ResolvedCall},
+     * which is then returned.
+     *
+     * @param projectClassPath path to the classpath of the project
+     * @param dependencyClassPath paths to the dependency jars, separated by colons (':')
+     * @return the list of resolved calls
+     * @throws CallgraphException whenever an unexpected error occurs during the building phase of the callgraph (currently only applicable to the Wala implementation)
+     */
     List<ResolvedCall> build(String projectClassPath, String dependencyClassPath) throws CallgraphException;
 
 
