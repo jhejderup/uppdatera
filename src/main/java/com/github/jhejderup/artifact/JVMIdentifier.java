@@ -63,7 +63,7 @@ public final class JVMIdentifier {
   }
 
   public static JVMIdentifier SpoonToJVMString(CtExecutable item) {
-    var clazz = ((CtType) (item.getParent())).getReference();
+    var clazz = item.getParent(CtType.class).getReference();
     var ret = item.getType();
     var args = Arrays.stream(item.getParameters().toArray())
         .map(CtParameter.class::cast).map(arg -> toJVMType(arg.getType(), true))

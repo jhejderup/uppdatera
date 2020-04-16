@@ -52,6 +52,8 @@ public final class GitDiffer implements Differ {
     }
     return Arrays.stream(rawOutput.split("\n")).map(line -> line.split("\t"))
         .map(arr -> {
+          if (arr.length < 2)
+            return null;
           String srcFile = arr[1];
           FileDiff.Change mode = FileDiff.getChangeType(arr[0]);
           if (arr.length == 3) {
