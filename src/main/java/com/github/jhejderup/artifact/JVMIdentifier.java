@@ -65,10 +65,11 @@ public final class JVMIdentifier {
   public static JVMIdentifier SpoonToJVMString(CtExecutable item) {
     var clazz = item.getParent(CtType.class).getReference();
     var ret = item.getType();
+
     var args = Arrays.stream(item.getParameters().toArray())
         .map(CtParameter.class::cast).map(arg -> toJVMType(arg.getType(), true))
         .collect(Collectors.joining(""));
-
+    //Some lambdas has null as return type
     return new JVMIdentifier(toJVMType(clazz, false), item.getSimpleName(),
         "(" + args + ")" + toJVMType(ret, true), Optional.of(item));
 
@@ -76,6 +77,9 @@ public final class JVMIdentifier {
 
   private static String toJVMType(CtTypeReference type, boolean isMethodDesc) {
     var JVMType = new StringBuilder();
+    if (type == null)
+      return "V"; //just return Void (this happens for lambdas)
+
 
     if (type instanceof CtArrayTypeReference) {
       var brackets = ((CtArrayTypeReference) type).getDimensionCount();
