@@ -85,7 +85,7 @@ public final class Artifact implements Package {
     try {
       var cpFileList = Maven.resolver()
           .resolve(coord.groupId + ":" + coord.artifactId + ":" + coord.version)
-          .withTransitivity().asFile();
+          .withoutTransitivity().asFile();
 
       var cp = Arrays.stream(cpFileList).map(File::toString).collect(Collectors.joining(":"));
       return Optional.of(cp);
