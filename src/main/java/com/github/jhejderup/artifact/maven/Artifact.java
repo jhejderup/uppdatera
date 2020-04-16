@@ -23,9 +23,12 @@ import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public final class Artifact implements Package {
 
@@ -71,6 +74,21 @@ public final class Artifact implements Package {
       logger.info(
           "[ShrinkWrap] Downloaded " + jarFile.toString() + " for " + coord);
       return Optional.of(jarFile.toPath());
+    } catch (Exception e) {
+      logger.error(
+          "[ShrinkWrap] Failed to download jar file for" + coord.toString());
+      return Optional.empty();
+    }
+  }
+
+  public Optional<String> getClassPath() {
+    try {
+      var cpFileList = Maven.resolver()
+          .resolve(coord.groupId + ":" + coord.artifactId + ":" + coord.version)
+          .withTransitivity().asFile();
+
+      var cp = Arrays.stream(cpFileList).map(File::toString).collect(Collectors.joining(":"));
+      return Optional.of(cp);
     } catch (Exception e) {
       logger.error(
           "[ShrinkWrap] Failed to download jar file for" + coord.toString());

@@ -53,23 +53,22 @@ public class UppdateraMaven {
   //////////
   /// uppdatera <args>
   /// - [0] classpath_project : path to target/classes
-  /// - [1] classpath_deps: path to all dependencies
-  /// - [2] groupid
-  /// - [3] artifactid
-  /// - [4] version old
-  /// - [5] version new
+  /// - [1] groupid
+  /// - [2] artifactid
+  /// - [3] version old
+  /// - [4] version new
   //////////
   public static void main(String[] args) throws IOException {
     assert args.length == 6;
 
     var clpathProject = args[0];
-    var clpathDepz = args[1];
+
 
     ///
     /// 1. Validate and download artifacts
     ///
-    var oldCoord = new Coordinate(args[2], args[3], args[4]);
-    var newCoord = new Coordinate(args[2], args[3], args[5]);
+    var oldCoord = new Coordinate(args[1], args[2], args[3]);
+    var newCoord = new Coordinate(args[1], args[2], args[4]);
 
     var oldArtifact = new Artifact(oldCoord);
     var newArtifact = new Artifact(newCoord);
@@ -87,6 +86,12 @@ public class UppdateraMaven {
         logger.error("[Uppdatera] Unable to download jar file for " + oldCoord);
       System.exit(50);
     }
+
+    ///
+    /// Get classpath of dependency
+    ///
+
+    var clpathDepz = oldArtifact.getClassPath().get();
 
     var filenameOldJar = oldJar.get().getFileName().toString();
     if (!clpathDepz.contains(filenameOldJar)) {
