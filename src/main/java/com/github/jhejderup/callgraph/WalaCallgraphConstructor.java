@@ -57,8 +57,18 @@ public final class WalaCallgraphConstructor {
       var scope = AnalysisScopeReader
           .makeJavaBinaryAnalysisScope(classpath_project, exclusionFile);
       //Add dependency classes under the extension scope
-      AnalysisScopeReader.addClassPathToScope(classpath_depz, scope,
-          scope.getLoader(AnalysisScope.EXTENSION));
+
+      var depz = classpath_depz.split(":");
+
+      Arrays.stream(depz).forEach(cp -> {
+        try {
+          AnalysisScopeReader.addClassPathToScope(cp, scope, scope.getLoader(AnalysisScope.EXTENSION));
+        } catch (Error e){
+           logger.info("Failed adding dependency to the extension scope: {}",cp);
+        }
+      });
+
+
 
       //3. Class Hierarchy for name resolution -> missing superclasses are replaced by the ClassHierarchy root,
       //   i.e. java.lang.Object
