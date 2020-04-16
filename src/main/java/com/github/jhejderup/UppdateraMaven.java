@@ -59,7 +59,7 @@ public class UppdateraMaven {
   /// - [4] version new
   //////////
   public static void main(String[] args) throws IOException {
-    assert args.length == 6;
+    assert args.length == 5;
 
     var clpathProject = args[0];
 
