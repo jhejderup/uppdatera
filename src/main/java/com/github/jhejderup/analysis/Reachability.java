@@ -49,19 +49,18 @@ public final class Reachability {
         this.lookup.put(target, call.target);
       }
       if (!lookup.containsKey(source)) {
-        this.lookup.put(target, call.source);
+        this.lookup.put(source, call.source);
       }
       //populate a "reverse graph"
       if (this.graph.containsKey(call.target)) {
         this.graph.get(call.target).add(call.source);
       } else {
-        this.graph.put(call.target,
-            Stream.of(call.source).collect(Collectors.toList()));
+        this.graph.put(call.target, Stream.of(call.source).collect(Collectors.toList()));
       }
     });
   }
 
-  private static JVMIdentifier WALAToJVMIdentifier(MethodReference ref) {
+  public static JVMIdentifier WALAToJVMIdentifier(MethodReference ref) {
     return new JVMIdentifier(ref.getDeclaringClass().getName().toString(),
         ref.getName().toString(), ref.getDescriptor().toString(),Optional.empty());
   }
@@ -85,7 +84,7 @@ public final class Reachability {
 
     if (!getClassLoader(root).equals(ClassLoaderReference.Extension)) {
       logger.error("[search] the function `" + methodID
-          + "` is not a dependency node (e.g., Extension type)");
+          + "` is not a dependency node (e.g., Extension type), it has the following type " + getClassLoader(root).getName().toString());
       return new ArrayList<>();
     }
 
