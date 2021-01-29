@@ -1,6 +1,6 @@
 # Uppdatera
 
-Static Regression Detection for Automated Dependency Updates in Maven Projects
+Change Impact Analysis for Automated Dependency Updates in Maven Projects
 
 
 ## Instructions
@@ -31,7 +31,7 @@ java -jar target/uppdatera-0.0.1-SNAPSHOT-jar-with-dependencies.jar [0] [1] [2] 
 - [5] version_new => 2.0.0
 ```
 
-## Bucket list
+## Roadmap
 
 - [x] :construction: Refactor components
 - [ ] :chart_with_upwards_trend: Create neat reports
